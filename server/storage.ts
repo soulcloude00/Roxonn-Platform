@@ -106,7 +106,7 @@ export class DatabaseStorage implements IStorage {
       });
       return user;
     } catch (error) {
-      console.error("Error getting user by GitHub ID:", error);
+      console.error(`Error getting user by GitHub ID ${githubId}:`, error);
       throw error;
     }
   }
