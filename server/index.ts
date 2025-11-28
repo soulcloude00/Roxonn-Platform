@@ -353,6 +353,34 @@ const nodeLimiter = rateLimit({
 // Apply node rate limiting
 app.use('/api/node/', nodeLimiter);
 
+// Rate limiting for subscription/payment endpoints (stricter to prevent abuse)
+const subscriptionLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // Limit each IP to 30 requests per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many subscription requests, please try again later',
+  skip: (req) => config.nodeEnv === 'development', // Skip rate limiting in development
+  keyGenerator: (req) => req.ip as string, // Use req.ip with 'trust proxy'
+});
+
+// Apply subscription rate limiting
+app.use('/api/subscription/', subscriptionLimiter);
+
+// Rate limiting for admin endpoints
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // Limit each IP to 50 requests per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many admin requests, please try again later',
+  skip: (req) => config.nodeEnv === 'development', // Skip rate limiting in development
+  keyGenerator: (req) => req.ip as string, // Use req.ip with 'trust proxy'
+});
+
+// Apply admin rate limiting
+app.use('/api/admin/', adminLimiter);
+
 // Health check endpoint for ALB
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });

@@ -731,12 +731,18 @@ export async function getUserAdminOrgs(token: string): Promise<{ login: string; 
  * @returns Array of repo objects
  */
 export async function getOrgReposForRegistration(token: string, orgName: string): Promise<any[]> {
+  // SSRF Protection: Validate org name
+  if (!isValidGitHubOwner(orgName)) {
+    log(`Invalid GitHub org name format: ${orgName}`, 'github');
+    return [];
+  }
+
   try {
     log(`Fetching repositories for org ${orgName}`, 'github');
 
     // Get all repos from the organization
     const response = await axios.get(
-      `${GITHUB_API_BASE}/orgs/${orgName}/repos`,
+      buildSafeGitHubUrl('/orgs/{orgName}/repos', { orgName }),
       {
         headers: getGitHubApiHeaders(token),
         params: {
@@ -945,9 +951,16 @@ export async function handleIssueClosed(payload: WebhookPayload, installationId:
   const issue = payload.issue;
   const repo = payload.repository;
   const repoId = repo.id;
-  const issueId = issue.id; 
+  const issueId = issue.id;
   const issueNumber = issue.number;
   const repoFullName = repo.full_name;
+
+  // SSRF Protection: Validate repo full name even though it comes from webhook
+  const [webhookOwner, webhookRepo] = (repoFullName || '').split('/');
+  if (!isValidGitHubOwner(webhookOwner) || !isValidGitHubRepo(webhookRepo)) {
+    log(`Invalid repo format in webhook payload: ${repoFullName}`, 'webhook-issue');
+    return;
+  }
 
   log(`Processing Issue Closed: Repo=${repoFullName}(${repoId}), Issue=#${issueNumber}(${issueId}), Install=${installationId}`, 'webhook-issue');
 
@@ -1011,10 +1024,14 @@ export async function handleIssueClosed(payload: WebhookPayload, installationId:
           return; // Cannot proceed without token
       }
       const installationApiHeaders = getGitHubApiHeaders(installationToken);
-      // --- Use Installation Token for API Call --- 
-      const timelineUrl = `${GITHUB_API_BASE}/repos/${repoFullName}/issues/${issueNumber}/timeline`;
+      // --- Use Installation Token for API Call (using validated webhook owner/repo) ---
+      const timelineUrl = buildSafeGitHubUrl('/repos/{owner}/{repo}/issues/{issueNumber}/timeline', {
+        owner: webhookOwner,
+        repo: webhookRepo,
+        issueNumber: String(issueNumber)
+      });
       log(`Fetching timeline: ${timelineUrl}`, 'webhook-issue');
-      const timelineResponse = await axios.get(timelineUrl, { 
+      const timelineResponse = await axios.get(timelineUrl, {
           headers: installationApiHeaders // Use token!
        });
        // Iterate backwards through timeline events to find the most recent closing event by a merged PR

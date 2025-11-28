@@ -420,7 +420,7 @@ export async function registerRoutes(app: Express) {
             : req.user.githubAccessToken;
 
           const repoDetails = await axios.get(
-            `https://api.github.com/repos/${githubRepoFullName}`,
+            buildSafeGitHubUrl('/repos/{owner}/{repo}', { owner: repoOwnerFromName, repo: repoNameFromName }),
             {
               headers: {
                 Authorization: `token ${userToken}`,
@@ -461,7 +461,7 @@ export async function registerRoutes(app: Express) {
         // First try repository-specific installation
         try {
           const repoResponse = await axios.get(
-            `https://api.github.com/repos/${owner}/${repo}/installation`,
+            buildSafeGitHubUrl('/repos/{owner}/{repo}/installation', { owner, repo }),
             {
               headers: {
                 Authorization: `token ${req.user.githubAccessToken}`,
@@ -482,7 +482,7 @@ export async function registerRoutes(app: Express) {
               : req.user.githubAccessToken;
 
             const repoDetails = await axios.get(
-              `https://api.github.com/repos/${githubRepoFullName}`,
+              buildSafeGitHubUrl('/repos/{owner}/{repo}', { owner, repo }),
               {
                 headers: {
                   Authorization: `token ${userToken}`,
@@ -513,11 +513,11 @@ export async function registerRoutes(app: Express) {
         } catch (repoError) {
           // Repository-specific installation not found, check user installations
           log(`Repository-specific installation not found for ${githubRepoFullName}, checking user installations`, 'routes');
-          
+
           try {
-            // Check if the app is installed for the user/organization
+            // Check if the app is installed for the user/organization (this endpoint is user-specific, not repository)
             const userInstallationsResponse = await axios.get(
-              `https://api.github.com/user/installations`,
+              `${GITHUB_API_BASE}/user/installations`,
               {
                 headers: {
                   Authorization: `token ${req.user.githubAccessToken}`,
@@ -562,7 +562,7 @@ export async function registerRoutes(app: Express) {
                   : req.user.githubAccessToken;
 
                 const repoDetails = await axios.get(
-                  `https://api.github.com/repos/${githubRepoFullName}`,
+                  buildSafeGitHubUrl('/repos/{owner}/{repo}', { owner: repoOwnerFromName, repo: repoNameFromName }),
                   {
                     headers: {
                       Authorization: `token ${userToken}`,
