@@ -1,0 +1,67 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+/client/dist
+cache/
+contracts/artifacts/
+contracts/cache/
+
+# Environment files (NEVER commit these)
+.env
+.env.*
+!.env.example
+server/.env
+server/.env.*
+!server/.env.example
+client/.env
+client/.env.*
+!client/.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Database files
+*.db
+*.sqlite
+*.dump
+*.sql.bak
+
+# Debug/temp files
+*.debug
+temp_*.txt
+*_output.txt
+*_log.txt
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Uploads (user generated)
+uploads/
+
+# Hardhat
+artifacts/
+typechain-types/
+
+# OpenZeppelin deployment files
+.openzeppelin/
+
+# Server certificates (download at runtime)
+server/certs/
+
+# Misc
+*.patch
+*.bak

@@ -1,0 +1,45 @@
+@font-face {
+  font-family: VideoJS;
+  src: url(/fonts/VideoJS.eot);
+  src: url(/fonts/VideoJS.eot?#iefix) format('embedded-opentype'),
+    url(/fonts/VideoJS.woff) format('woff'),
+    url(/fonts/VideoJS.ttf) format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.video-js {
+  font-family: VideoJS;
+}
+
+.vjs-icon-play:before,
+.video-js .vjs-big-play-button .vjs-icon-placeholder:before,
+.video-js .vjs-play-control .vjs-icon-placeholder:before {
+  content: "\f101";
+}
+
+.vjs-icon-pause:before,
+.video-js .vjs-play-control.vjs-playing .vjs-icon-placeholder:before {
+  content: "\f103";
+}
+
+.vjs-icon-volume-high:before,
+.video-js .vjs-mute-control .vjs-icon-placeholder:before {
+  content: "\f107";
+}
+
+.vjs-icon-volume-mute:before,
+.video-js .vjs-mute-control.vjs-vol-0 .vjs-icon-placeholder:before {
+  content: "\f104";
+}
+
+.vjs-icon-fullscreen-enter:before,
+.video-js .vjs-fullscreen-control .vjs-icon-placeholder:before {
+  content: "\f108";
+}
+
+.vjs-icon-fullscreen-exit:before,
+.video-js.vjs-fullscreen .vjs-fullscreen-control .vjs-icon-placeholder:before {
+  content: "\f109";
+}
+

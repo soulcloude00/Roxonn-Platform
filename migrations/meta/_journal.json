@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1744445423361,
+      "tag": "0000_unique_white_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1744522034569,
+      "tag": "0001_superb_zarek",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1748790772368,
+      "tag": "0002_magenta_exiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1748792139336,
+      "tag": "0003_short_iceman",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1748792487024,
+      "tag": "0004_mushy_ares",
+      "breakpoints": true
+    }
+  ]
+}
