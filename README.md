@@ -1,6 +1,60 @@
-# Roxonn with XDC Blockchain Integration
+# Roxonn Platform
 
-A decentralized platform for managing GitHub repository contributions using XDC blockchain technology. This system enables secure identity management, reward distribution, and contribution tracking for open-source projects using the ROXN token.
+### Earn Crypto for Open-Source Contributions
+
+[![Live on XDC Mainnet](https://img.shields.io/badge/XDC-Mainnet-blue?style=for-the-badge&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA)](https://xdc.org)
+[![GitHub Issues](https://img.shields.io/github/issues/Roxonn-FutureTech/Roxonn-Platform?style=for-the-badge)](https://github.com/Roxonn-FutureTech/Roxonn-Platform/issues)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+
+**[Launch App](https://app.roxonn.com)** | **[View Project Board](https://github.com/orgs/Roxonn-FutureTech/projects/17)** | **[Contributing Guide](CONTRIBUTING.md)**
+
+---
+
+## What is Roxonn?
+
+Roxonn is a **decentralized platform that automatically pays developers in cryptocurrency** when their GitHub pull requests get merged. No invoices, no payment processors, no waiting - just code and compensation working in harmony.
+
+### For Developers
+- Browse repositories funded with crypto bounties
+- Submit quality pull requests
+- **Get paid automatically** when your PR is merged
+- Supports **XDC, ROXN tokens, and USDC**
+
+### For Project Maintainers (Pool Managers)
+- Fund your repository with cryptocurrency
+- Attract quality contributors instantly
+- **Automatic reward distribution** via smart contracts
+- Support for **public and private repositories**
+
+---
+
+## Why Roxonn?
+
+| Problem | Roxonn Solution |
+|---------|-----------------|
+| Developers contribute for free | Automatic crypto payments on PR merge |
+| Projects struggle to find contributors | Funded repos attract talent instantly |
+| Payment processing is complex | Smart contracts handle everything |
+| International payments are slow/expensive | XDC blockchain: sub-penny fees, 2-sec transactions |
+
+---
+
+## Quick Start
+
+**Start Contributing:**
+1. Visit [app.roxonn.com](https://app.roxonn.com)
+2. Connect your GitHub account
+3. Browse funded repositories
+4. Submit PRs and earn crypto!
+
+**Fund Your Repository:**
+1. Register your repo on Roxonn
+2. Fund with XDC, ROXN, or USDC
+3. Watch contributors discover your project
+
+---
+
+## Technical Overview
 
 ## Architecture Overview
 
