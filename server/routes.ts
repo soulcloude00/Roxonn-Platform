@@ -19,7 +19,7 @@ import { registeredRepositories, courseAssignments } from "../shared/schema";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 import { handleOpenAIStream } from './openai-stream';
-import { getOrgRepos, getRepoDetails, verifyRepoExists, verifyUserIsRepoAdmin, verifyUserIsOrgAdmin, getUserAdminOrgs, getOrgReposForRegistration, getUserAdminRepos, handlePullRequestMerged, handleIssueClosed, getInstallationAccessToken, getGitHubApiHeaders, GITHUB_API_BASE, findAppInstallationByName, isValidGitHubOwner, isValidGitHubRepo, buildSafeGitHubUrl } from "./github";
+import { getOrgRepos, getRepoDetails, verifyRepoExists, verifyUserIsRepoAdmin, verifyUserIsOrgAdmin, getUserAdminOrgs, getOrgReposForRegistration, getUserAdminRepos, handlePullRequestMerged, handleIssueClosed, getInstallationAccessToken, getGitHubApiHeaders, GITHUB_API_BASE, findAppInstallationByName, isValidGitHubOwner, isValidGitHubRepo, buildSafeGitHubUrl, handleBountyCommand, parseBountyCommand } from "./github";
 import { blockchain } from "./blockchain";
 import { ethers } from "ethers";
 import { log } from "./utils";
@@ -40,6 +40,7 @@ import { sendOtpEmail } from './email';
 import aiScopingAgentRouter from './routes/aiScopingAgent';
 import multiCurrencyWalletRoutes from './routes/multiCurrencyWallet';
 import referralRoutes from './routes/referralRoutes';
+import promotionalBountiesRoutes from './routes/promotionalBounties';
 import { referralService } from './services/referralService';
 import { activityService } from './services/activityService';
 import { dispatchTask } from './services/proofOfComputeService';
@@ -121,6 +122,22 @@ async function handleGitHubAppWebhook(req: Request, res: Response) {
       // ... logic to call storage.upsert/remove ...
       return res.status(200).json({ message: 'Installation event processed.' });
     
+    // --- Handle Issue Comment for Bounty Commands ---
+    } else if (event === 'issue_comment' && payload.action === 'created') {
+      const commentBody = payload.comment?.body || '';
+      const command = parseBountyCommand(commentBody);
+      
+      if (command) {
+        log(`Processing bounty command from ${payload.sender?.login} on issue #${payload.issue?.number}`, 'webhook-app');
+        setImmediate(() => {
+          handleBountyCommand(payload, installationId).catch(err => {
+            log(`Error processing bounty command: ${err?.message || err}`, 'webhook-app');
+          });
+        });
+        return res.status(202).json({ message: 'Bounty command processing initiated.' });
+      }
+      return res.status(200).json({ message: 'Comment ignored - no bounty command' });
+
     // --- Handle Issue Closed for Payout ---
     } else if (event === 'issues' && payload.action === 'closed') {
       log(`Processing App issue closed event for #${payload.issue?.number}`, 'webhook-app');
@@ -3507,6 +3524,9 @@ export async function registerRoutes(app: Express) {
 
   // Referral system routes
   app.use('/api/referral', referralRoutes);
+  
+  // Promotional Bounties API routes
+  app.use('/api/promotional', promotionalBountiesRoutes);
 
   // User Activity API - aggregates activity from multiple sources
   app.get('/api/user/activity', requireAuth, async (req: Request, res: Response) => {
