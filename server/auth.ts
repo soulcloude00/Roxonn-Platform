@@ -79,32 +79,32 @@ export const requireVSCodeAuth = async (req: Request, res: Response, next: NextF
     log(`VSCode auth: User already authenticated via Passport: ${req.user.id}`, 'vscode-auth');
     return next();
   }
-  
+
   // If no user, try to authenticate directly from the token
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     log('requireVSCodeAuth: No Bearer token found in Authorization header', 'vscode-auth');
     return res.status(401).json({ error: "Unauthorized - No token provided" });
   }
-  
+
   // Extract token
   const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-  
+
   try {
     // Verify the token
     const decoded = jwt.verify(token, config.sessionSecret!) as any; // Decoded payload will have 'id'
     log(`VSCode direct auth: Token verified for user ID: ${decoded.id}`, 'vscode-auth'); // Use decoded.id
-    
+
     // Get user from database
     const user = await db.query.users.findFirst({
       where: eq(users.id, decoded.id), // Use decoded.id
     });
-    
+
     if (!user) {
       log(`VSCode direct auth: User not found for ID: ${decoded.id}`, 'vscode-auth'); // Use decoded.id
       return res.status(401).json({ error: "Unauthorized - User not found" });
     }
-    
+
     // Create authenticated user object and attach to request
     const authenticatedUser: Express.User = {
       id: user.id,
@@ -121,11 +121,11 @@ export const requireVSCodeAuth = async (req: Request, res: Response, next: NextF
       githubAccessToken: decoded.githubAccessToken,
       promptBalance: user.promptBalance ?? 0, // Use promptBalance, default to 0 if null/undefined
     };
-    
+
     // Attach to request
     req.user = authenticatedUser;
     log(`VSCode direct auth successful for user ID: ${user.id}`, 'vscode-auth');
-    
+
     // Continue
     next();
   } catch (error) {
@@ -147,19 +147,19 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
   if (req.path.startsWith('/api/auth/github') || req.path.startsWith('/api/vscode/ai/completions')) { // Also skip for VSCode API if it uses Bearer token
     return next();
   }
-  
+
   // For API requests that modify data, check the CSRF token
   if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
     const sessionToken = req.session.csrfToken;
-    const requestToken = req.headers['x-csrf-token'] as string || 
-                         req.body._csrf as string;
-    
+    const requestToken = req.headers['x-csrf-token'] as string ||
+      req.body._csrf as string;
+
     if (!sessionToken || !requestToken || sessionToken !== requestToken) {
       log(`CSRF token validation failed: ${req.method} ${req.path}`, 'auth');
       return res.status(403).json({ error: 'CSRF validation failed' });
     }
   }
-  
+
   next();
 }
 
@@ -213,13 +213,13 @@ export function setupAuth(app: Application) {
       if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.substring(7); // Remove 'Bearer ' prefix
         const tokenStart = token.substring(0, 20); // Get start of token for logging
-        
+
         try {
           // Attempt to decode without verification for debugging
           const decoded = jwt.decode(token);
           log(`JWT debug - Token detected. Start: ${tokenStart}...`, 'jwt-debug');
           log(`JWT debug - Decoded payload: ${JSON.stringify(decoded)}`, 'jwt-debug');
-          
+
           // Store raw token in request for debugging
           (req as any).rawJwtToken = token;
         } catch (e) {
@@ -237,9 +237,9 @@ export function setupAuth(app: Application) {
   passport.use(new JwtStrategy(jwtOptions as any, async (req: Request, jwt_payload: any, done: any) => {
     try {
       // jwt_payload will have 'id' from the token
-      log(`JWT auth attempt with payload: id=${jwt_payload.id}`, 'auth'); 
+      log(`JWT auth attempt with payload: id=${jwt_payload.id}`, 'auth');
       log(`JWT request path: ${req.path}`, 'jwt-debug');
-      
+
       // jwt_payload contains the decoded JWT payload (id, email, etc.)
       const user = await db.query.users.findFirst({
         where: eq(users.id, jwt_payload.id), // Use jwt_payload.id
@@ -312,7 +312,7 @@ export function setupAuth(app: Application) {
         try {
           // Get user email from GitHub API if not available in profile
           let email = profile.emails?.[0]?.value || null;
-          
+
           if (!email) {
             log(`GitHubStrategy: Email not in profile for ${profile.id}. Fetching from API...`, 'auth-github-strategy');
             try {
@@ -345,7 +345,7 @@ export function setupAuth(app: Application) {
           } else {
             log(`GitHubStrategy: Email found in profile for ${profile.id}: ${email}`, 'auth-github-strategy');
           }
-          
+
           log(`GitHubStrategy: Searching for existing user with GitHub ID: ${profile.id}`, 'auth-github-strategy');
           const existingUser = await db.query.users.findFirst({
             where: eq(users.githubId, profile.id),
@@ -364,18 +364,18 @@ export function setupAuth(app: Application) {
               .where(eq(users.githubId, profile.id))
               .returning();
             log(`GitHubStrategy: User ID ${existingUser.id} updated.`, 'auth-github-strategy');
-            
+
             // Ensure promptBalance are preserved or initialized if undefined on updatedUser
             let finalUser = updatedUser;
             // The schema now has `promptBalance` as notNull with default 0, so direct check for undefined might not be needed
             // if the DB record is always created correctly. However, good to be safe if old records might exist or for type consistency.
             if (finalUser && (finalUser.promptBalance === null || typeof finalUser.promptBalance === 'undefined')) {
-                log(`GitHubStrategy: promptBalance is null/undefined for updated user ${finalUser.id}, ensuring it's set from existingUser.promptBalance (${existingUser.promptBalance}) or default 0.`, 'auth-github-strategy');
-                const [userWithPromptBalance] = await db.update(users)
-                    .set({ promptBalance: existingUser.promptBalance ?? 0 }) 
-                    .where(eq(users.id, finalUser.id))
-                    .returning();
-                finalUser = userWithPromptBalance;
+              log(`GitHubStrategy: promptBalance is null/undefined for updated user ${finalUser.id}, ensuring it's set from existingUser.promptBalance (${existingUser.promptBalance}) or default 0.`, 'auth-github-strategy');
+              const [userWithPromptBalance] = await db.update(users)
+                .set({ promptBalance: existingUser.promptBalance ?? 0 })
+                .where(eq(users.id, finalUser.id))
+                .returning();
+              finalUser = userWithPromptBalance;
             }
             log(`GitHubStrategy: Returning updated user ID ${finalUser.id} to Passport.`, 'auth-github-strategy');
             return done(null, finalUser);
@@ -411,6 +411,25 @@ export function setupAuth(app: Application) {
   );
 
   // Auth routes
+  /**
+   * @openapi
+   * /api/auth/github:
+   *   get:
+   *     summary: Initiate GitHub authentication
+   *     tags: [Authentication]
+   *     parameters:
+   *       - in: query
+   *         name: returnTo
+   *         schema: { type: string }
+   *         description: URL to redirect to after successful login
+   *       - in: query
+   *         name: source
+   *         schema: { type: string }
+   *         description: Source of the auth request (e.g., 'vscode')
+   *     responses:
+   *       302:
+   *         description: Redirect to GitHub
+   */
   app.get("/api/auth/github", (req, res, next) => {
     // Safely extract and validate query parameters to prevent type confusion attacks
     // Express query params can be arrays if passed multiple times, so we ensure they're strings
@@ -419,16 +438,16 @@ export function setupAuth(app: Application) {
 
     // Only accept string values, reject arrays or other types
     const returnTo = typeof rawReturnTo === 'string' ? rawReturnTo : undefined;
-    const source = typeof rawSource === 'string' ? rawSource : undefined; 
-    
+    const source = typeof rawSource === 'string' ? rawSource : undefined;
+
     // Create state for VSCode to maintain context through redirects without relying on session
     let state: string | undefined;
-    
+
     if (source === 'vscode') {
       // For VSCode, use a stateless approach with a signed state parameter
       // Create a state object with source and returnTo
       const stateObj = { source, returnTo: returnTo || '/repos', timestamp: Date.now() };
-      
+
       // Sign the state to prevent tampering
       if (config.sessionSecret) {
         state = jwt.sign(stateObj, config.sessionSecret, { expiresIn: '5m' });
@@ -436,7 +455,7 @@ export function setupAuth(app: Application) {
       } else {
         log('CRITICAL: JWT secret is missing for state signing', 'auth');
       }
-      
+
       // Still set session variables as backup
       req.session.authSource = source;
       log(`Auth initiated with source: ${source}`, 'auth');
@@ -445,14 +464,14 @@ export function setupAuth(app: Application) {
       req.session.authSource = source;
       log(`Auth initiated with source: ${source}`, 'auth');
     } else {
-      delete req.session.authSource; 
+      delete req.session.authSource;
     }
 
     if (returnTo) {
       const normalizedReturnTo = returnTo.startsWith('/') ? returnTo : `/${returnTo}`;
       if (normalizedReturnTo.includes('://') || normalizedReturnTo.startsWith('//')) {
         log(`Rejected potentially malicious returnTo URL: ${normalizedReturnTo}`, 'auth');
-        req.session.returnTo = '/repos'; 
+        req.session.returnTo = '/repos';
       } else {
         req.session.returnTo = normalizedReturnTo;
         log(`GitHub auth initiated with return URL: ${normalizedReturnTo}`, 'auth');
@@ -461,21 +480,21 @@ export function setupAuth(app: Application) {
       req.session.returnTo = '/repos';
       log('GitHub auth initiated with default return URL: /repos', 'auth');
     }
-    
+
     log(`GitHub auth config: clientID=${config.githubClientId}, callbackURL=${config.githubCallbackUrl}, BASE_URL=${config.baseUrl}`, 'auth');
     log(`Full GitHub callback URL: ${config.githubCallbackUrl}`, 'auth');
     log(`Request origin: ${req.headers.origin || 'unknown'}`, 'auth');
     log(`Request referer: ${req.headers.referer || 'unknown'}`, 'auth');
-    
+
     // Add state parameter to GitHub authentication if available
-    const authOptions: any = { 
-      scope: ["user:email", "public_repo", "read:org"] 
+    const authOptions: any = {
+      scope: ["user:email", "public_repo", "read:org"]
     };
-    
+
     if (state) {
       authOptions.state = state;
     }
-    
+
     passport.authenticate("github", authOptions)(req, res, next);
   });
 
@@ -488,9 +507,9 @@ export function setupAuth(app: Application) {
 
   app.get(
     "/api/auth/callback/github",
-    passport.authenticate("github", { 
-      failureRedirect: `${config.frontendUrl}/auth?error=authentication_failed`, 
-      failureMessage: true 
+    passport.authenticate("github", {
+      failureRedirect: `${config.frontendUrl}/auth?error=authentication_failed`,
+      failureMessage: true
     }),
     async (req: Request, res: Response) => { // Added async here
       // --- START MODIFIED SECTION ---
@@ -523,12 +542,12 @@ export function setupAuth(app: Application) {
           // For web flow, can be less strict or simply fall back to session source.
         }
       }
-      
+
       if (!actualSource && req.session.authSource) {
         actualSource = req.session.authSource;
         log(`Using source from session: ${actualSource}`, 'auth');
       }
-      
+
       // Defer deleting req.session.authSource until after routing logic if it's not 'vscode'
 
       if (!req.user.githubAccessToken) {
@@ -570,7 +589,7 @@ export function setupAuth(app: Application) {
       if (actualSource === 'vscode') {
         if (!req.user.isProfileComplete) {
           log(`New VSCode user ${req.user.id} needs onboarding. Redirecting to web.`, 'auth');
-          req.session.isVscodeOnboarding = true; 
+          req.session.isVscodeOnboarding = true;
           // req.session.vscodeOriginalReturnTo = stateDataFromJwt?.returnTo; // Optional: if you need to pass original returnTo from VSCode
           req.session.save(err => {
             if (err) {
@@ -586,14 +605,14 @@ export function setupAuth(app: Application) {
           log(`Existing VSCode user ${req.user.id} is fully onboarded. Generating JWT.`, 'auth');
           const jwtPayload: Express.User = { // Using Express.User type
             id: req.user.id, // Corrected from userId to id
-            githubId: req.user.githubId, 
-            username: req.user.username, 
-            githubUsername: req.user.githubUsername, 
-            email: req.user.email, 
+            githubId: req.user.githubId,
+            username: req.user.username,
+            githubUsername: req.user.githubUsername,
+            email: req.user.email,
             avatarUrl: req.user.avatarUrl,
-            role: req.user.role, 
+            role: req.user.role,
             xdcWalletAddress: req.user.xdcWalletAddress,
-            promptBalance: req.user.promptBalance ?? 0, 
+            promptBalance: req.user.promptBalance ?? 0,
             isProfileComplete: req.user.isProfileComplete,
             githubAccessToken: req.user.githubAccessToken,
             name: req.user.name, // Ensure all fields from Express.User are present
@@ -614,7 +633,7 @@ export function setupAuth(app: Application) {
 
           // Ensure jwtPayload is treated as a plain object for jwt.sign
           const plainPayload = { ...jwtPayload };
-          const tokenOptions: SignOptions = { 
+          const tokenOptions: SignOptions = {
             expiresIn: '30d' // Hardcode for testing, was config.jwtExpiresInVSCode 
           };
           const token = jwt.sign(plainPayload, config.sessionSecret, tokenOptions); // Use checked config.sessionSecret and typed options
@@ -666,14 +685,32 @@ export function setupAuth(app: Application) {
     return sanitizedUser;
   }
 
+  /**
+   * @openapi
+   * /api/auth/user:
+   *   get:
+   *     summary: Get current authenticated user
+   *     tags: [Authentication]
+   *     security:
+   *       - cookieAuth: []
+   *     responses:
+   *       200:
+   *         description: User profile
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/User'
+   *       401:
+   *         description: Unauthorized
+   */
   app.get("/api/auth/user", (req: Request, res: Response) => {
     res.cookie('session_test', 'true', {
       secure: true,
       sameSite: 'none',
       domain: config.cookieDomain,
-      maxAge: 60 * 60 * 1000, 
+      maxAge: 60 * 60 * 1000,
     });
-    
+
     log(`Auth user request - Session ID: ${req.sessionID || 'none'}`, 'auth');
     log(`Auth user request - User: ${req.user ? 'authenticated' : 'not authenticated'}`, 'auth');
     log(`Auth user request - Cookies: ${JSON.stringify(req.cookies)}`, 'auth');
@@ -682,7 +719,7 @@ export function setupAuth(app: Application) {
       'Access-Control-Allow-Origin': res.getHeader('Access-Control-Allow-Origin'),
       'Access-Control-Allow-Credentials': res.getHeader('Access-Control-Allow-Credentials'),
     })}`, 'auth');
-    
+
     res.json(sanitizeUserData(req.user) || null);
   });
 
@@ -690,7 +727,7 @@ export function setupAuth(app: Application) {
     log(`Session debug - Session ID: ${req.sessionID || 'none'}`, 'auth');
     log(`Session debug - User: ${req.user ? 'authenticated' : 'not authenticated'}`, 'auth');
     log(`Session debug - Cookies: ${JSON.stringify(req.cookies)}`, 'auth');
-    
+
     res.json({
       sessionId: req.sessionID || null,
       isAuthenticated: !!req.user,
@@ -698,6 +735,18 @@ export function setupAuth(app: Application) {
     });
   });
 
+  /**
+   * @openapi
+   * /api/auth/logout:
+   *   post:
+   *     summary: Logout user
+   *     tags: [Authentication]
+   *     security:
+   *       - cookieAuth: []
+   *     responses:
+   *       200:
+   *         description: Logout successful
+   */
   app.post("/api/auth/logout", (req: Request, res: Response) => {
     req.logout(() => {
       res.json({ success: true });
@@ -730,19 +779,19 @@ export function setupAuth(app: Application) {
   app.post("/api/auth/register", requireAuth, async (req, res) => {
     try {
       const { role, email: submittedEmail } = req.body;
-      
+
       if (!role || !["contributor", "poolmanager"].includes(role)) {
         return res.status(400).json({ error: "Invalid role" });
       }
-      
+
       const email = submittedEmail || req.user?.email;
-      
+
       if (!email || typeof email !== 'string' || !email.includes('@')) {
         return res.status(400).json({ error: "Valid email address is required" });
       }
 
       if (req.user && req.user.xdcWalletAddress) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "User already has a wallet",
           address: req.user.xdcWalletAddress
         });
@@ -755,9 +804,9 @@ export function setupAuth(app: Application) {
         log("Wallet created successfully", "auth");
       } catch (walletError: any) {
         log(`Failed to create wallet: ${walletError.message}`, "auth");
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: "Failed to create wallet",
-          details: walletError.message 
+          details: walletError.message
         });
       }
 
@@ -775,9 +824,9 @@ export function setupAuth(app: Application) {
 
       } catch (blockchainError: any) { // This catch block is for the original blockchain.registerUser
         log(`Blockchain registration failed (XDC System): ${blockchainError.message}`, "auth");
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: "Failed to register on XDC blockchain system",
-          details: blockchainError.message 
+          details: blockchainError.message
         });
       }
 
@@ -787,7 +836,7 @@ export function setupAuth(app: Application) {
             .update(users)
             .set({
               role,
-              email,  
+              email,
               xdcWalletAddress: wallet.address,
               walletReferenceId: wallet.referenceId,
               isProfileComplete: true,
@@ -796,7 +845,7 @@ export function setupAuth(app: Application) {
             .returning();
 
           req.user.role = role;
-          req.user.email = email;  
+          req.user.email = email;
           req.user.isProfileComplete = true;
           req.user.xdcWalletAddress = wallet.address;
           req.user.walletReferenceId = wallet.referenceId;
@@ -812,7 +861,7 @@ export function setupAuth(app: Application) {
           }
 
           log("User registration completed successfully with email: " + email, "auth");
-          
+
           try {
             createZohoLead({
               username: req.user.username,
@@ -827,7 +876,7 @@ export function setupAuth(app: Application) {
           } catch (error) {
             log(`Failed to initialize Zoho lead creation: ${error}`, "auth");
           }
-          
+
           res.json({
             success: true,
             user: {

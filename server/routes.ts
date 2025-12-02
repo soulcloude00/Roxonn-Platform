@@ -233,11 +233,55 @@ export async function registerRoutes(app: Express) {
   });
 
   // Public GitHub API routes with security protections
+  /**
+   * @openapi
+   * /api/github/repos:
+   *   get:
+   *     summary: Get public GitHub repositories
+   *     tags: [Repositories]
+   *     parameters:
+   *       - in: query
+   *         name: page
+   *         schema: { type: integer }
+   *       - in: query
+   *         name: per_page
+   *         schema: { type: integer }
+   *     responses:
+   *       200:
+   *         description: List of repositories
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items: { type: object }
+   */
   app.get("/api/github/repos",
     securityMiddlewares.repoRateLimiter,
     securityMiddlewares.securityMonitor,
     getOrgRepos
   );
+  /**
+   * @openapi
+   * /api/github/repos/{owner}/{name}:
+   *   get:
+   *     summary: Get GitHub repository details
+   *     tags: [Repositories]
+   *     parameters:
+   *       - in: path
+   *         name: owner
+   *         required: true
+   *         schema: { type: string }
+   *       - in: path
+   *         name: name
+   *         required: true
+   *         schema: { type: string }
+   *     responses:
+   *       200:
+   *         description: Repository details
+   *         content:
+   *           application/json:
+   *             schema: { type: object }
+   */
   app.get("/api/github/repos/:owner/:name",
     securityMiddlewares.repoRateLimiter,
     securityMiddlewares.securityMonitor,
@@ -245,6 +289,25 @@ export async function registerRoutes(app: Express) {
   );
 
   // New route to get repositories the authenticated user admins
+  /**
+   * @openapi
+   * /api/github/user/repos:
+   *   get:
+   *     summary: Get repositories where authenticated user is admin
+   *     tags: [Repositories]
+   *     security:
+   *       - cookieAuth: []
+   *     responses:
+   *       200:
+   *         description: List of admin repositories
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items: { type: object }
+   *       401:
+   *         description: Unauthorized
+   */
   app.get("/api/github/user/repos",
     requireAuth,
     securityMiddlewares.repoRateLimiter,
@@ -315,35 +378,7 @@ export async function registerRoutes(app: Express) {
   );
 
   // Public routes
-  /**
-   * @openapi
-   * /api/auth/user:
-   *   get:
-   *     summary: Get current authenticated user
-   *     tags: [Auth]
-   *     security:
-   *       - cookieAuth: []
-   *     responses:
-   *       200:
-   *         description: The current user
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 id:
-   *                   type: integer
-   *                 username:
-   *                   type: string
-   *                 githubId:
-   *                   type: string
-   *       401:
-   *         description: Not authenticated
-   */
-  app.get("/api/auth/user", (req, res) => {
-    // Sanitize user data before sending to client
-    res.json(sanitizeUserData(req.user) || null);
-  });
+
 
   // Partner API for verifying user registrations
   /**
@@ -737,6 +772,29 @@ export async function registerRoutes(app: Express) {
     });
 
   // Get repos registered by current user (Keep this for UI)
+  /**
+   * @openapi
+   * /api/repositories/registered:
+   *   get:
+   *     summary: Get repositories registered by current user
+   *     tags: [Repositories]
+   *     security:
+   *       - cookieAuth: []
+   *     responses:
+   *       200:
+   *         description: List of registered repositories
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 repositories:
+   *                   type: array
+   *                   items:
+   *                     $ref: '#/components/schemas/Repository'
+   *       401:
+   *         description: Unauthorized
+   */
   app.get("/api/repositories/registered",
     requireAuth,
     securityMiddlewares.repoRateLimiter,
@@ -797,6 +855,29 @@ export async function registerRoutes(app: Express) {
 
   // Get repositories accessible to the current user (public + private repos they have GitHub access to)
   // Uses GitHub App installation tokens to check collaborator status - NO user private tokens needed
+  /**
+   * @openapi
+   * /api/repositories/accessible:
+   *   get:
+   *     summary: Get all repositories accessible to current user
+   *     tags: [Repositories]
+   *     security:
+   *       - cookieAuth: []
+   *     responses:
+   *       200:
+   *         description: List of accessible repositories
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 repositories:
+   *                   type: array
+   *                   items:
+   *                     $ref: '#/components/schemas/Repository'
+   *       401:
+   *         description: Unauthorized
+   */
   app.get("/api/repositories/accessible",
     requireAuth,
     securityMiddlewares.repoRateLimiter,
@@ -1305,6 +1386,24 @@ export async function registerRoutes(app: Express) {
   });
 
   // Get wallet info
+  /**
+   * @openapi
+   * /api/wallet/info:
+   *   get:
+   *     summary: Get user wallet information
+   *     tags: [Wallet]
+   *     security:
+   *       - cookieAuth: []
+   *     responses:
+   *       200:
+   *         description: Wallet info
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/WalletInfo'
+   *       401:
+   *         description: Unauthorized
+   */
   app.get('/api/wallet/info', requireAuth, csrfProtection, async (req, res) => {
     try {
       const user = req.user;
@@ -1339,6 +1438,29 @@ export async function registerRoutes(app: Express) {
   });
 
   // Get transfer limits for user wallet
+  /**
+   * @openapi
+   * /api/wallet/limits:
+   *   get:
+   *     summary: Get wallet transfer limits
+   *     tags: [Wallet]
+   *     security:
+   *       - cookieAuth: []
+   *     responses:
+   *       200:
+   *         description: Transfer limits
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 usedAmount: { type: number }
+   *                 remainingLimit: { type: number }
+   *                 dailyLimit: { type: number }
+   *                 resetTime: { type: string, format: date-time }
+   *       401:
+   *         description: Unauthorized
+   */
   app.get('/api/wallet/limits', requireAuth, csrfProtection, async (req, res) => {
     try {
       const user = req.user;
@@ -1370,6 +1492,33 @@ export async function registerRoutes(app: Express) {
   });
 
   // Get recent transactions for user wallet
+  /**
+   * @openapi
+   * /api/wallet/transactions:
+   *   get:
+   *     summary: Get recent wallet transactions
+   *     tags: [Wallet]
+   *     security:
+   *       - cookieAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: limit
+   *         schema: { type: integer, default: 10 }
+   *     responses:
+   *       200:
+   *         description: List of transactions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 transactions:
+   *                   type: array
+   *                   items:
+   *                     $ref: '#/components/schemas/Transaction'
+   *       401:
+   *         description: Unauthorized
+   */
   app.get('/api/wallet/transactions', requireAuth, csrfProtection, async (req, res) => {
     try {
       const user = req.user;
@@ -1396,6 +1545,26 @@ export async function registerRoutes(app: Express) {
   });
 
   // Generate Onramp.money URL for buying USDC on XDC
+  /**
+   * @openapi
+   * /api/wallet/buy-xdc-url:
+   *   get:
+   *     summary: Generate Onramp.money URL for buying USDC on XDC
+   *     tags: [Wallet]
+   *     security:
+   *       - cookieAuth: []
+   *     responses:
+   *       200:
+   *         description: Onramp URL
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 url: { type: string }
+   *       401:
+   *         description: Unauthorized
+   */
   app.get('/api/wallet/buy-xdc-url', requireAuth, csrfProtection, async (req, res) => {
     try {
       const user = req.user;
@@ -1468,6 +1637,26 @@ export async function registerRoutes(app: Express) {
   });
 
   // Generate Onramp.money URL for selling/withdrawing USDC on XDC (Off-ramp)
+  /**
+   * @openapi
+   * /api/wallet/sell-xdc-url:
+   *   get:
+   *     summary: Generate Onramp.money URL for selling USDC on XDC
+   *     tags: [Wallet]
+   *     security:
+   *       - cookieAuth: []
+   *     responses:
+   *       200:
+   *         description: Offramp URL
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 url: { type: string }
+   *       401:
+   *         description: Unauthorized
+   */
   app.get('/api/wallet/sell-xdc-url', requireAuth, csrfProtection, async (req, res) => {
     try {
       const user = req.user;
@@ -1806,6 +1995,35 @@ export async function registerRoutes(app: Express) {
 
   // Subscription routes
   // Initialize merchant checkout for subscription
+  /**
+   * @openapi
+   * /api/subscription/merchant/init:
+   *   post:
+   *     summary: Initialize merchant checkout for subscription
+   *     tags: [Subscriptions]
+   *     security:
+   *       - cookieAuth: []
+   *     requestBody:
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               fiatType: { type: integer }
+   *               logoUrl: { type: string }
+   *     responses:
+   *       200:
+   *         description: Checkout config
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 merchantRecognitionId: { type: string }
+   *                 walletAddress: { type: string }
+   *       401:
+   *         description: Unauthorized
+   */
   app.post('/api/subscription/merchant/init', requireAuth, csrfProtection, async (req, res) => {
     try {
       const user = req.user;
@@ -1860,6 +2078,31 @@ export async function registerRoutes(app: Express) {
   });
 
   // Initialize crypto payment (Crypto Merchant Widget)
+  /**
+   * @openapi
+   * /api/subscription/crypto/init:
+   *   post:
+   *     summary: Initialize crypto payment for subscription
+   *     tags: [Subscriptions]
+   *     security:
+   *       - cookieAuth: []
+   *     requestBody:
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               chainId: { type: string }
+   *               language: { type: string }
+   *     responses:
+   *       200:
+   *         description: Crypto payment intent
+   *         content:
+   *           application/json:
+   *             schema: { type: object }
+   *       401:
+   *         description: Unauthorized
+   */
   app.post('/api/subscription/crypto/init', requireAuth, csrfProtection, async (req, res) => {
     try {
       const user = req.user;
@@ -1933,6 +2176,24 @@ export async function registerRoutes(app: Express) {
   });
 
   // Get subscription status
+  /**
+   * @openapi
+   * /api/subscription/status:
+   *   get:
+   *     summary: Get current subscription status
+   *     tags: [Subscriptions]
+   *     security:
+   *       - cookieAuth: []
+   *     responses:
+   *       200:
+   *         description: Subscription status
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Subscription'
+   *       401:
+   *         description: Unauthorized
+   */
   app.get('/api/subscription/status', requireAuth, csrfProtection, async (req, res) => {
     try {
       const user = req.user;
@@ -2379,6 +2640,27 @@ export async function registerRoutes(app: Express) {
   });
 
   // Blockchain routes
+  /**
+   * @openapi
+   * /api/blockchain/repository/{repoId}:
+   *   get:
+   *     summary: Get repository blockchain details
+   *     tags: [Blockchain]
+   *     parameters:
+   *       - in: path
+   *         name: repoId
+   *         required: true
+   *         schema: { type: integer }
+   *     responses:
+   *       200:
+   *         description: Repository blockchain info
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Repository'
+   *       500:
+   *         description: Blockchain error
+   */
   app.get('/api/blockchain/repository/:repoId',
     securityMiddlewares.repoRateLimiter,
     securityMiddlewares.securityMonitor,
@@ -2400,6 +2682,35 @@ export async function registerRoutes(app: Express) {
     });
 
   // Get repository funding status
+  /**
+   * @openapi
+   * /api/blockchain/repository/{repoId}/funding-status:
+   *   get:
+   *     summary: Get repository funding status
+   *     tags: [Blockchain]
+   *     security:
+   *       - cookieAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: repoId
+   *         required: true
+   *         schema: { type: integer }
+   *     responses:
+   *       200:
+   *         description: Funding status
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 dailyLimit: { type: number }
+   *                 currentTotal: { type: number }
+   *                 remainingLimit: { type: number }
+   *                 windowStartTime: { type: string }
+   *                 windowEndTime: { type: string }
+   *       401:
+   *         description: Unauthorized
+   */
   app.get('/api/blockchain/repository/:repoId/funding-status',
     requireAuth,
     securityMiddlewares.repoRateLimiter,
@@ -2430,6 +2741,46 @@ export async function registerRoutes(app: Express) {
     });
 
   // Modified funding route with stricter checks
+  /**
+   * @openapi
+   * /api/blockchain/repository/{repoId}/fund:
+   *   post:
+   *     summary: Fund a repository
+   *     tags: [Blockchain]
+   *     security:
+   *       - cookieAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: repoId
+   *         required: true
+   *         schema: { type: integer }
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - amountXdc
+   *               - repositoryFullName
+   *             properties:
+   *               amountXdc: { type: string }
+   *               repositoryFullName: { type: string }
+   *     responses:
+   *       200:
+   *         description: Funding successful
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message: { type: string }
+   *                 transactionHash: { type: string }
+   *       401:
+   *         description: Unauthorized
+   *       403:
+   *         description: Forbidden
+   */
   app.post('/api/blockchain/repository/:repoId/fund', requireAuth, csrfProtection, async (req, res) => {
     try {
       // Validate input: repoId from URL param, amountXdc and repositoryFullName from body

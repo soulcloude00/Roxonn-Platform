@@ -25,6 +25,112 @@ const options: swaggerJsdoc.Options = {
             },
         ],
         components: {
+            schemas: {
+                User: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer' },
+                        username: { type: 'string' },
+                        email: { type: 'string', format: 'email' },
+                        githubId: { type: 'string' },
+                        avatarUrl: { type: 'string' },
+                        isProfileComplete: { type: 'boolean' }
+                    }
+                },
+                ReferralInfo: {
+                    type: 'object',
+                    properties: {
+                        code: { type: 'string' },
+                        referralCount: { type: 'integer' },
+                        totalEarned: { type: 'number' },
+                        referrerUsername: { type: 'string' }
+                    }
+                },
+                ReferralStats: {
+                    type: 'object',
+                    properties: {
+                        totalReferrals: { type: 'integer' },
+                        totalUsdcEarned: { type: 'number' },
+                        totalRoxnEarned: { type: 'number' },
+                        pendingUsdc: { type: 'number' },
+                        pendingRoxn: { type: 'number' }
+                    }
+                },
+                Error: {
+                    type: 'object',
+                    properties: {
+                        error: { type: 'string' },
+                        details: { type: 'object' }
+                    }
+                },
+                RewardInfo: {
+                    type: 'object',
+                    properties: {
+                        usdc: { type: 'number' },
+                        roxn: { type: 'number' },
+                        rewards: {
+                            type: 'array',
+                            items: { type: 'object' }
+                        }
+                    }
+                },
+                PayoutRequest: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer' },
+                        userId: { type: 'integer' },
+                        amountUsdc: { type: 'number' },
+                        amountRoxn: { type: 'number' },
+                        status: { type: 'string', enum: ['pending', 'paid', 'rejected'] },
+                        createdAt: { type: 'string', format: 'date-time' }
+                    }
+                },
+                Repository: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer' },
+                        githubRepoId: { type: 'string' },
+                        githubRepoFullName: { type: 'string' },
+                        isPrivate: { type: 'boolean' },
+                        xdcPoolRewards: { type: 'string' },
+                        roxnPoolRewards: { type: 'string' },
+                        usdcPoolRewards: { type: 'string' }
+                    }
+                },
+                WalletInfo: {
+                    type: 'object',
+                    properties: {
+                        address: { type: 'string' },
+                        balance: { type: 'string' },
+                        tokenBalance: { type: 'string' }
+                    }
+                },
+                Transaction: {
+                    type: 'object',
+                    properties: {
+                        hash: { type: 'string' },
+                        from: { type: 'string' },
+                        to: { type: 'string' },
+                        value: { type: 'string' },
+                        timestamp: { type: 'integer' }
+                    }
+                },
+                Subscription: {
+                    type: 'object',
+                    properties: {
+                        active: { type: 'boolean' },
+                        periodEnd: { type: 'string', format: 'date-time' },
+                        subscription: {
+                            type: 'object',
+                            properties: {
+                                id: { type: 'string' },
+                                plan: { type: 'string' },
+                                status: { type: 'string' }
+                            }
+                        }
+                    }
+                }
+            },
             securitySchemes: {
                 cookieAuth: {
                     type: 'apiKey',
@@ -44,7 +150,7 @@ const options: swaggerJsdoc.Options = {
             },
         ],
     },
-    apis: ['./server/routes.ts', './server/routes/*.ts'], // Path to the API docs
+    apis: ['./server/routes.ts', './server/routes/*.ts', './server/auth.ts'], // Path to the API docs
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
