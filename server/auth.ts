@@ -28,6 +28,7 @@ declare module 'express-session' {
     csrfToken?: string;
     authSource?: string; // Added for VSCode auth flow
     isVscodeOnboarding?: boolean; // Added for VSCode onboarding flow state
+    privateAuthUpgrade?: boolean; // Added for private repo access upgrade flow
   }
 }
 

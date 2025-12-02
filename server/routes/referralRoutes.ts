@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 const router = Router();
 
 // Middleware to require authentication
+// Note: Local version used instead of server/auth.ts to avoid strict GitHub token requirement for referral operations
 const requireAuth = (req: Request, res: Response, next: Function) => {
   if (!req.user) {
     return res.status(401).json({ error: 'Authentication required' });
@@ -86,6 +87,24 @@ const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/code', requireAuth, async (req: Request, res: Response) => {
   try {
@@ -134,23 +153,20 @@ router.get('/code', requireAuth, async (req: Request, res: Response) => {
  *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
-router.post('/code/custom', requireAuth, async (req: Request, res: Response) => {
-  // Implementation placeholder if not exists, or just documentation if it does
-  // Assuming implementation exists or will be added. 
-  // Based on review, this endpoint was missing from docs but implied to exist.
-  // If it doesn't exist in code, I should probably not document it or add stub.
-  // Checking file content again...
-  // The file content I viewed earlier didn't show this endpoint.
-  // I will add the documentation block and the endpoint stub if needed, 
-  // but for now I'll stick to documenting existing endpoints and adding the missing ones if they are in the file.
-  // Wait, the review said "Missing endpoint coverage: ... POST /api/referral/code/custom".
-  // This implies the endpoint might exist but I missed it, OR it needs to be implemented.
-  // I'll assume it needs to be documented.
-  // Let's look at the file content again to be sure.
-  // I'll just document the existing ones better first.
-  res.status(501).json({ error: 'Not implemented' });
-});
+
 
 /**
  * POST /api/referral/code/custom
@@ -220,6 +236,12 @@ router.post('/code/custom', requireAuth, async (req: Request, res: Response) => 
  *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post('/apply', requireAuth, applyRateLimiter, async (req: Request, res: Response) => {
   try {
@@ -276,6 +298,14 @@ router.post('/apply', requireAuth, applyRateLimiter, async (req: Request, res: R
  *               properties:
  *                 valid:
  *                   type: boolean
+ *       429:
+ *         description: Too many requests
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/validate/:code', validateRateLimiter, async (req: Request, res: Response) => {
   try {
@@ -309,6 +339,18 @@ router.get('/validate/:code', validateRateLimiter, async (req: Request, res: Res
  *               $ref: '#/components/schemas/ReferralStats'
  *       401:
  *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
@@ -359,6 +401,12 @@ router.get('/stats', requireAuth, async (req: Request, res: Response) => {
  *                       earnings: { type: number }
  *                 userRank:
  *                   type: integer
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/leaderboard', async (req: Request, res: Response) => {
   try {
@@ -412,6 +460,18 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
  *                   items: { type: object }
  *       401:
  *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
@@ -467,6 +527,12 @@ router.get('/rewards', requireAuth, async (req: Request, res: Response) => {
  *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post('/rewards/claim', requireAuth, async (req: Request, res: Response) => {
   try {
@@ -505,6 +571,12 @@ router.post('/rewards/claim', requireAuth, async (req: Request, res: Response) =
  *               $ref: '#/components/schemas/PayoutRequest'
  *       401:
  *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/payout/status', requireAuth, async (req: Request, res: Response) => {
   try {
@@ -539,6 +611,12 @@ router.get('/payout/status', requireAuth, async (req: Request, res: Response) =>
  *                     $ref: '#/components/schemas/PayoutRequest'
  *       401:
  *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/payout/history', requireAuth, async (req: Request, res: Response) => {
   try {
@@ -577,6 +655,12 @@ router.get('/payout/history', requireAuth, async (req: Request, res: Response) =
  *                     $ref: '#/components/schemas/PayoutRequest'
  *       401:
  *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       403:
  *         description: Forbidden (Not admin)
  */
@@ -625,6 +709,12 @@ router.get('/admin/payouts/pending', requireAdmin, async (req: Request, res: Res
  *         description: Invalid input
  *       401:
  *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       403:
  *         description: Forbidden
  *       404:
