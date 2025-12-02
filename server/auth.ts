@@ -29,6 +29,7 @@ declare module 'express-session' {
     authSource?: string; // Added for VSCode auth flow
     isVscodeOnboarding?: boolean; // Added for VSCode onboarding flow state
     privateAuthUpgrade?: boolean; // Added for private repo access upgrade flow
+    hasPrivateRepoAccess?: boolean; // Added for private repo access check
   }
 }
 
@@ -48,6 +49,7 @@ declare global {
       walletReferenceId: string | null;
       githubAccessToken: string;
       promptBalance: number; // Changed from aiCredits
+      hasPrivateRepoAccess?: boolean | null; // Added for private repo access check
     }
   }
 }
@@ -267,7 +269,7 @@ export function setupAuth(app: Application) {
         };
         return done(null, authenticatedUser);
       } else {
-        log(`JWT auth: User not found for userId ${jwt_payload.userId}`, 'auth');
+        log(`JWT auth: User not found for id ${jwt_payload.id}`, 'auth');
         return done(null, false);
       }
     } catch (error) {
@@ -757,7 +759,7 @@ export function setupAuth(app: Application) {
   // Private repository access upgrade endpoints
   app.get("/api/auth/private-access-status", requireAuth, (req: Request, res: Response) => {
     res.json({
-      hasPrivateAccess: (req.user as any)?.hasPrivateRepoAccess || false
+      hasPrivateAccess: req.user?.hasPrivateRepoAccess || false
     });
   });
 
@@ -767,7 +769,7 @@ export function setupAuth(app: Application) {
     req.session.privateAuthUpgrade = true;
     req.session.returnTo = returnTo || '/repositories?upgraded=true';
 
-    log(`Private repo upgrade initiated for user: ${(req.user as any)?.username}`, 'auth');
+    log(`Private repo upgrade initiated for user: ${req.user?.username}`, 'auth');
 
     // Request expanded scope for private repo access
     const privateAuthOptions = {
