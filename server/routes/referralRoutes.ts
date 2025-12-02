@@ -75,35 +75,6 @@ const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ReferralInfo'
- *             example:
- *               code: "FRIEND2024"
- *               referralCount: 5
- *               totalEarned: 100
- *               referrerUsername: "referrer_user"
- *       401:
- *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
  *               $ref: '#/components/schemas/Error'
  */
 router.get('/code', requireAuth, async (req: Request, res: Response) => {
@@ -153,12 +124,6 @@ router.get('/code', requireAuth, async (req: Request, res: Response) => {
  *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Unauthorized
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Internal server error
  *         content:
@@ -345,16 +310,6 @@ router.get('/validate/:code', validateRateLimiter, async (req: Request, res: Res
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
 router.get('/stats', requireAuth, async (req: Request, res: Response) => {
   try {
@@ -460,16 +415,6 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
  *                   items: { type: object }
  *       401:
  *         description: Unauthorized
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Internal server error
  *         content:
