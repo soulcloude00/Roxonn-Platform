@@ -19,6 +19,8 @@ import passport from "passport";
 import { registerRoutes } from "./routes";
 import { setupVite } from "./vite";
 import { serveStatic, log } from "./utils";
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './swagger';
 import { setupAuth, requireAuth } from './auth';
 import { generateWallet } from './tatum';
 import { db, users } from './db';
@@ -62,28 +64,28 @@ app.use(helmet({
 // Create a safer header handling middleware
 app.use((req, res, next) => {
   const originalSetHeader = res.setHeader;
-  
+
   // Create a safer wrapper for setHeader that handles errors gracefully
-  res.setHeader = function(name, value) {
+  res.setHeader = function (name, value) {
     try {
       // Try to set the header
       const result = originalSetHeader.call(this, name, value);
-      
+
       // Log successful CORS header setting
       if (name.toLowerCase().startsWith('access-control')) {
         log(`Set header successfully: ${name}=${value}`, 'cors-debug');
       }
-      
+
       return result;
     } catch (error) {
       // Log the error but don't throw it
       log(`Warning: Unable to set header ${name}=${value}: ${error}`, 'cors-debug');
-      
+
       // Return this to maintain chaining
       return this;
     }
   };
-  
+
   next();
 });
 
@@ -91,43 +93,43 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   // Log headers before any CORS processing
   log(`[BEFORE] Request to ${req.method} ${req.path} from origin: ${req.headers.origin}`, 'cors-debug');
-  
+
   // Original end override
   const originalEnd = res.end;
   // @ts-ignore - Overriding the end method to log headers
-  res.end = function(chunk, encoding, callback) {
+  res.end = function (chunk, encoding, callback) {
     // Log all headers before sending response
     const headers = res.getHeaders();
     log(`[FINAL] Response headers for ${req.method} ${req.path}: ${JSON.stringify(headers)}`, 'cors-debug');
-    
+
     if (headers['access-control-allow-origin']) {
       log(`CORS Origin header value: ${headers['access-control-allow-origin']}`, 'cors-debug');
     }
-    
+
     return originalEnd.call(this, chunk, encoding, callback);
   };
-  
+
   next();
 });
 
 // Add middleware to prevent duplicate CORS headers
 app.use((req, res, next) => {
   const originalSetHeader = res.setHeader;
-  
+
   // @ts-ignore - Overriding the setHeader method to prevent duplicate CORS headers
-  res.setHeader = function(name, value) {
+  res.setHeader = function (name, value) {
     const lowerCaseName = name.toLowerCase();
-    
+
     // If it's a CORS header and it's already set, don't set it again
     if (lowerCaseName.startsWith('access-control-') && res.getHeader(name)) {
       log(`BLOCKED duplicate CORS header: ${name} = ${value}`, 'cors-debug');
       log(`Existing value: ${res.getHeader(name)}`, 'cors-debug');
       return this;
     }
-    
+
     return originalSetHeader.call(this, name, value);
   };
-  
+
   next();
 });
 
@@ -140,14 +142,14 @@ app.use(cors({
       log(`Allowing request with no origin (VSCode extension request)`, 'cors-debug');
       return callback(null, true);
     }
-    
+
     // Check against allowed origins
     const allowedOrigins = [
       'https://app.roxonn.com',  // Web app
       /^vscode-webview:\/\/.*/,  // VSCode webviews (using regex for wildcard)
       /^vscode-file:\/\/.*/     // VSCode file protocol
     ];
-    
+
     // Check if the origin matches any of the allowed origins (including regex patterns)
     const allowed = allowedOrigins.some(allowedOrigin => {
       if (allowedOrigin instanceof RegExp) {
@@ -155,7 +157,7 @@ app.use(cors({
       }
       return allowedOrigin === origin;
     });
-    
+
     if (allowed) {
       log(`Allowing request from origin: ${origin}`, 'cors-debug');
       return callback(null, origin);
@@ -205,9 +207,9 @@ app.use((req, res, next) => {
       'Access-Control-Allow-Headers': res.getHeader('Access-Control-Allow-Headers')
     }
   };
-  
+
   log(`CORS Debug: ${JSON.stringify(corsDebug)}`, 'cors');
-  
+
   // Continue with the request
   next();
 });
@@ -228,7 +230,7 @@ app.use((req, res, next) => {
   log(`Request cookies: ${JSON.stringify(req.cookies)}`, 'cookies');
   log(`Request session ID: ${req.sessionID || 'none'}`, 'cookies');
   log(`Request user: ${req.user ? 'authenticated' : 'not authenticated'}`, 'cookies');
-  
+
   next();
 });
 
@@ -237,7 +239,7 @@ app.use((req, res, next) => {
   // Only log for VSCode endpoints
   if (req.path.includes('/vscode/') || req.path.includes('/api/vscode/')) {
     log(`JWT Debug - Path: ${req.path}`, 'jwt-debug');
-    
+
     // Log Authorization header safely (obfuscate the actual token)
     const authHeader = req.headers.authorization;
     if (authHeader) {
@@ -255,7 +257,7 @@ app.use((req, res, next) => {
       log(`JWT Debug - No Authorization header present`, 'jwt-debug');
     }
   }
-  
+
   next();
 });
 
@@ -425,6 +427,9 @@ app.get('/health', (req, res) => {
 // Register API routes
 // registerRoutes(app);  // Will be called after config initialization
 
+// Swagger UI
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 // Configure Vite middleware for development if not in production
 // ... existing code ...
 
@@ -457,10 +462,10 @@ async function startServer() {
 
     // Setup authentication with the initialized config
     setupAuth(app);
-    
+
     // Register API routes
     registerRoutes(app);
-    
+
     // Configure Vite or static file serving
     if (config.nodeEnv !== 'production') {
       // Set up Vite middleware for development
@@ -469,7 +474,7 @@ async function startServer() {
       // Serve static files in production
       serveStatic(app);
     }
-    
+
     // Start listening on port
     const PORT = config.port;
     server.listen(PORT, () => {
@@ -488,7 +493,7 @@ async function startServer() {
         log(`Error updating offline nodes: ${error}`, 'cron-ERROR');
       }
     }, 60 * 1000);
-    
+
     // Handle graceful shutdown
     setupShutdownHandlers();
   } catch (error) {
@@ -503,7 +508,7 @@ startServer();
 // Setup shutdown handlers
 function setupShutdownHandlers() {
   // ... existing shutdown code ...
-  
+
   // Handle shutdown signals
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
@@ -512,17 +517,17 @@ function setupShutdownHandlers() {
 // Graceful shutdown function
 async function shutdown(signal: string) {
   log(`Received ${signal}. Shutting down gracefully...`);
-  
+
   // Close the HTTP server
   server.close(() => {
     log('HTTP server closed.');
   });
-  
+
   try {
     // Close any database connections or other resources
     await walletService.destroy();
     log('Resources closed.');
-    
+
     // Exit the process
     process.exit(0);
   } catch (error) {

@@ -60,6 +60,20 @@ const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
  * GET /api/referral/code
  * Get or create user's referral code and stats
  */
+/**
+ * @openapi
+ * /api/referral/code:
+ *   get:
+ *     summary: Get or create user's referral code and stats
+ *     tags: [Referrals]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Referral info
+ *       401:
+ *         description: Unauthorized
+ */
 router.get('/code', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
@@ -100,6 +114,33 @@ router.post('/code/custom', requireAuth, async (req: Request, res: Response) => 
  * Apply a referral code to current user
  * SECURITY: Rate limited to prevent spam
  */
+/**
+ * @openapi
+ * /api/referral/apply:
+ *   post:
+ *     summary: Apply a referral code to current user
+ *     tags: [Referrals]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - code
+ *             properties:
+ *               code:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Referral code applied successfully
+ *       400:
+ *         description: Invalid code or already applied
+ *       401:
+ *         description: Unauthorized
+ */
 router.post('/apply', requireAuth, applyRateLimiter, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
@@ -133,6 +174,29 @@ router.post('/apply', requireAuth, applyRateLimiter, async (req: Request, res: R
  * Validate a referral code (public endpoint for signup page)
  * SECURITY: Rate limited to prevent code enumeration
  */
+/**
+ * @openapi
+ * /api/referral/validate/{code}:
+ *   get:
+ *     summary: Validate a referral code (public endpoint)
+ *     tags: [Referrals]
+ *     parameters:
+ *       - in: path
+ *         name: code
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Validation result
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 valid:
+ *                   type: boolean
+ */
 router.get('/validate/:code', validateRateLimiter, async (req: Request, res: Response) => {
   try {
     const { code } = req.params;
@@ -148,6 +212,20 @@ router.get('/validate/:code', validateRateLimiter, async (req: Request, res: Res
  * GET /api/referral/stats
  * Get detailed referral statistics for current user
  */
+/**
+ * @openapi
+ * /api/referral/stats:
+ *   get:
+ *     summary: Get detailed referral statistics for current user
+ *     tags: [Referrals]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Referral stats
+ *       401:
+ *         description: Unauthorized
+ */
 router.get('/stats', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
@@ -162,6 +240,22 @@ router.get('/stats', requireAuth, async (req: Request, res: Response) => {
 /**
  * GET /api/referral/leaderboard
  * Get referral leaderboard
+ */
+/**
+ * @openapi
+ * /api/referral/leaderboard:
+ *   get:
+ *     summary: Get referral leaderboard
+ *     tags: [Referrals]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Leaderboard data
  */
 router.get('/leaderboard', async (req: Request, res: Response) => {
   try {
