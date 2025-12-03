@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_prompt_transactions_user_id_created_at ON prompt_transactions(user_id, created_at);
