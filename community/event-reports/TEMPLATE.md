@@ -1,6 +1,6 @@
 # Event Report: [Event Name]
 
-**Contributor:** @[YourGitHubUsername]
+**Contributor:** @{your-github-username}
 **Date:** [YYYY-MM-DD]
 **Location:** [City, Country / Online]
 **Event Type:** [e.g., Meetup, Conference, Workshop, University Talk]
@@ -25,9 +25,12 @@
 ## 6. Proof of Activity
 *Please provide verifiable proof of your participation.*
 
-*   [ ] **Photos/Videos:** *(Embed or link here)*
-*   [ ] **Social Media Links:** *(Link to tweets, LinkedIn posts, etc.)*
-*   [ ] **Materials Used:** *(Link to slides, handouts, etc.)*
+*   [ ] **Photos/Videos**
+    * *Embed or link to photos/videos here.*
+*   [ ] **Social Media Links**
+    * *Link to tweets, LinkedIn posts, etc.*
+*   [ ] **Materials Used**
+    * *Link to slides, handouts, etc.*
 
 ## 7. Additional Notes
 *Any other relevant information or suggestions for future events.*
