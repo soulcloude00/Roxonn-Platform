@@ -17,7 +17,11 @@ export function decodeBase64(str: string): string {
     base64 += '=';
   }
 
-  return atob(base64);
+  try {
+    return atob(base64);
+  } catch (error) {
+    throw new Error(`Invalid base64 string: ${error instanceof Error ? error.message : 'unknown error'}`);
+  }
 }
 
 export function base64ToUint8Array(str: string): Uint8Array {
