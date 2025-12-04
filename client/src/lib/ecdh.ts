@@ -1,4 +1,6 @@
 // Helper for ECDH envelope encryption on the client side
+import { decodeBase64 } from "./utils";
+
 // P-256 is supported by all evergreen browsers
 
 export async function generateEphemeralKeyPair(): Promise<{
@@ -75,7 +77,7 @@ function bufferToBase64(buf: ArrayBuffer) {
 }
 
 function base64ToArrayBuffer(base64: string): ArrayBuffer {
-  const binary = atob(base64);
+  const binary = decodeBase64(base64);
   const len = binary.length;
   const bytes = new Uint8Array(len);
   for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
