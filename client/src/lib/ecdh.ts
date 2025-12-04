@@ -1,5 +1,5 @@
 // Helper for ECDH envelope encryption on the client side
-import { decodeBase64 } from "./utils";
+import { base64ToUint8Array, decodeBase64 } from "./utils";
 
 // P-256 is supported by all evergreen browsers
 
@@ -77,9 +77,5 @@ function bufferToBase64(buf: ArrayBuffer) {
 }
 
 function base64ToArrayBuffer(base64: string): ArrayBuffer {
-  const binary = decodeBase64(base64);
-  const len = binary.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes.buffer;
+  return base64ToUint8Array(base64).buffer as ArrayBuffer;
 }

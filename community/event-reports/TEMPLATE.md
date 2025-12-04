@@ -38,11 +38,11 @@
 *Please provide verifiable proof of your participation. Proof is **required** — submit at least one, preferably multiple types below.*
 
 *   [ ] **Photos/Videos**
-  * *Embed or link to photos/videos here.*
+    * *Embed or link to photos/videos here.*
 *   [ ] **Social Media Links**
-  * *Link to tweets, LinkedIn posts, etc.*
+    * *Link to tweets, LinkedIn posts, etc.*
 *   [ ] **Materials Used**
-  * *Link to slides, handouts, etc.*
+    * *Link to slides, handouts, etc.*
 
 ## 8. Additional Notes
 *Any other relevant information or suggestions for future events.*

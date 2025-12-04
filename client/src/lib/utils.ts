@@ -20,7 +20,7 @@ export function decodeBase64(str: string): string {
   return atob(base64);
 }
 
-export function base64ToUint8Array(str: string): Uint8Array<ArrayBuffer> {
+export function base64ToUint8Array(str: string): Uint8Array {
   const binaryString = decodeBase64(str);
-  return Uint8Array.from(binaryString, c => c.charCodeAt(0)) as Uint8Array<ArrayBuffer>;
+  return Uint8Array.from(binaryString, c => c.charCodeAt(0));
 }
