@@ -81,8 +81,9 @@ export function WalletExport() {
 
       const data = response; // api.post already throws on non-OK
 
-      if (!data || !data.cipherText || !data.iv || !data.serverPublicKey) {
-        throw new Error('Invalid response from server');
+      if (!data || typeof data.cipherText !== 'string' || typeof data.iv !== 'string' || typeof data.serverPublicKey !== 'string') {
+        console.error('Invalid response data structure:', data);
+        throw new Error('Invalid response from server: missing or invalid fields');
       }
 
       // 3. Derive shared secret & decrypt

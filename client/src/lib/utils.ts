@@ -6,6 +6,11 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function decodeBase64(str: string): string {
+  if (typeof str !== 'string') {
+    console.error('decodeBase64 received non-string input:', str);
+    throw new Error(`Expected string for base64 decoding, got ${typeof str}`);
+  }
+
   // Remove any whitespace
   let base64 = str.replace(/\s/g, '');
 
