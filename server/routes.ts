@@ -1604,7 +1604,8 @@ export async function registerRoutes(app: Express) {
       });
 
     } catch (error: any) {
-      console.error('Error sending funds:', error); // Log full error internally
+      // Log safe error message internally
+      log(`Error sending funds for user ${req.user?.id}: ${error?.message || 'Unknown error'}`, 'routes');
 
       const errorMessage = error.message || 'Failed to send funds';
 

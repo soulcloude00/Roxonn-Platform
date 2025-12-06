@@ -387,6 +387,44 @@ export default function WalletNewPage() {
         return;
       }
 
+      // Validate address format
+      const addressPattern = /^(xdc|0x)[a-fA-F0-9]{40}$/i;
+      if (!addressPattern.test(sendAddress)) {
+        addNotification({
+          type: "error",
+          title: "Invalid Address",
+          message: "Please enter a valid XDC or 0x address",
+          duration: 3000,
+        });
+        return;
+      }
+
+      // Validate amount
+      const amountNum = parseFloat(sendAmount);
+      if (isNaN(amountNum) || amountNum <= 0) {
+        addNotification({
+          type: "error",
+          title: "Invalid Amount",
+          message: "Please enter a valid positive amount",
+          duration: 3000,
+        });
+        return;
+      }
+
+      // Check balance (approximate)
+      if (walletInfo?.balance) {
+        const balance = parseFloat(ethers.formatEther(walletInfo.balance));
+        if (amountNum > balance) {
+          addNotification({
+            type: "error",
+            title: "Insufficient Balance",
+            message: `Amount exceeds available balance`,
+            duration: 3000,
+          });
+          return;
+        }
+      }
+
       setIsConfirmingSend(true);
       const csrfToken = await csrfService.getToken();
 
@@ -448,15 +486,11 @@ export default function WalletNewPage() {
     try {
       // Handle cases where value might be Wei (bigint string) or already formatted
       // Assuming backend returns Wei as string based on review feedback context
-      // Safety check: if it looks like a small float, it might already be ether (legacy mock data format), 
-      // but real blockchain data is usually BigInt/Wei.
-      // Given it's from 'blockchain.getRecentTransactions', let's treat it safely.
-      // However, typical ethers providers return formatted strings or BigInts.
-      // Let's safe-guard:
       formattedAmount = ethers.formatEther(tx.value);
     } catch (e) {
-      // Fallback if formatting fails (e.g. if already decimal string)
-      formattedAmount = tx.value;
+      // Fallback for already-formatted string values or non-wei values
+      const parsed = parseFloat(tx.value);
+      formattedAmount = isNaN(parsed) ? "0.0000" : parsed.toFixed(4);
     }
 
     return {
@@ -672,8 +706,26 @@ export default function WalletNewPage() {
                         placeholder="0.00"
                         value={sendAmount}
                         onChange={(e) => setSendAmount(e.target.value)}
-                        className="pr-12"
+                        className="pr-20"
                       />
+                      <div className="absolute inset-y-0 right-12 flex items-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          type="button"
+                          onClick={() => {
+                            if (walletInfo?.balance) {
+                              const balance = parseFloat(ethers.formatEther(walletInfo.balance));
+                              // Leave ~0.01 XDC for gas
+                              const maxSend = Math.max(0, balance - 0.01);
+                              setSendAmount(maxSend.toFixed(4));
+                            }
+                          }}
+                          className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground mr-1"
+                        >
+                          Max
+                        </Button>
+                      </div>
                       <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-muted-foreground text-sm">
                         XDC
                       </div>
