@@ -273,7 +273,6 @@ export default function WalletNewPage() {
   const [isSelling, setIsSelling] = useState(false);
 
   // Send state
-  const [isSending, setIsSending] = useState(false);
   const [sendAddress, setSendAddress] = useState("");
   const [sendAmount, setSendAmount] = useState("");
   const [isConfirmingSend, setIsConfirmingSend] = useState(false);
@@ -391,7 +390,7 @@ export default function WalletNewPage() {
       }
 
       // Validate address format
-      const addressPattern = /^(xdc|0x)[a-fA-F0-9]{40}$/;
+      const addressPattern = /^(xdc|0x|XDC|0X)[a-fA-F0-9]{40}$/;
       if (!addressPattern.test(trimmedAddress)) {
         addNotification({
           type: "error",
@@ -444,7 +443,13 @@ export default function WalletNewPage() {
         }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        // Handle non-JSON response (e.g. 500 html page)
+        throw new Error(response.statusText || "Server error");
+      }
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to send funds");
@@ -537,9 +542,9 @@ export default function WalletNewPage() {
                 refetchUsdc();
                 refetchTransactions();
               }}
-              disabled={walletLoading || usdcLoading}
+              disabled={walletLoading || usdcLoading || isTransactionsLoading}
             >
-              <RefreshCw className={`w-4 h-4 mr-2 ${(walletLoading || usdcLoading) ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-4 h-4 mr-2 ${(walletLoading || usdcLoading || isTransactionsLoading) ? "animate-spin" : ""}`} />
               Refresh
             </Button>
             <Dialog>
@@ -680,7 +685,11 @@ export default function WalletNewPage() {
 
             <Dialog open={isSendDialogOpen} onOpenChange={setIsSendDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="w-full btn-primary" variant="outline">
+                <Button
+                  className="w-full btn-primary"
+                  variant="outline"
+                  disabled={!walletInfo?.address}
+                >
                   <Send className="w-4 h-4 mr-2" />
                   Send Funds
                 </Button>
@@ -849,7 +858,11 @@ export default function WalletNewPage() {
                   initial="hidden"
                   animate="visible"
                 >
-                  {transactions.length > 0 ? (
+                  {isTransactionsLoading && transactions.length === 0 ? (
+                    <div className="flex justify-center p-8">
+                      <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : transactions.length > 0 ? (
                     transactions.map((tx, index) => (
                       <TransactionItem key={index} {...tx} />
                     ))

@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import express from 'express';
 import { IncomingMessage } from 'http';
 import crypto from 'crypto';
+import { ethers } from 'ethers';
 import { requireAuth, csrfProtection } from '../auth';
 import { blockchain } from '../blockchain';
 import { config } from '../config';
@@ -555,6 +556,108 @@ router.post('/export-data', requireAuth, csrfProtection, requireOtp, async (req:
       error: 'Export failed',
       message: error.message || 'Failed to export wallet'
     });
+  }
+});
+
+/**
+ * @openapi
+ * /api/wallet/send:
+ *   post:
+ *     summary: Send XDC funds to another address
+ *     tags: [Wallet]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - toAddress
+ *               - amount
+ *             properties:
+ *               toAddress: { type: string }
+ *               amount: { type: string }
+ *     responses:
+ *       200:
+ *         description: Transaction submitted successfully
+ *       400:
+ *         description: Invalid input or insufficient funds
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/send', requireAuth, csrfProtection, async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const { toAddress, amount } = req.body;
+
+    if (!toAddress || !amount) {
+      return res.status(400).json({ error: 'Recipient address and amount are required' });
+    }
+
+    // Robust address validation (Checksum)
+    let checksumAddress: string;
+    try {
+      // Normalize 'xdc' prefix to '0x' for ethers compatibility
+      let addressToValidate = toAddress;
+      if (addressToValidate.toLowerCase().startsWith('xdc')) {
+        addressToValidate = '0x' + addressToValidate.substring(3);
+      }
+      checksumAddress = ethers.getAddress(addressToValidate);
+    } catch (e) {
+      return res.status(400).json({ error: 'Invalid recipient address format' });
+    }
+
+    // Parse amount
+    let sendAmount: bigint;
+    try { // Check transfer limits
+      sendAmount = ethers.parseEther(amount.toString());
+      if (sendAmount <= BigInt(0)) {
+        throw new Error('Amount must be positive');
+      }
+    } catch (e) {
+      return res.status(400).json({ error: 'Invalid amount' });
+    }
+
+    // Check transfer limits
+    const limitCheck = transferLimits.checkTransferLimit(user.id.toString(), parseFloat(ethers.formatEther(sendAmount)));
+    if (!limitCheck.allowed) {
+      return res.status(400).json({ error: limitCheck.reason || 'Transfer limit exceeded' });
+    }
+
+    log(`User ${user.id} initiating send of ${ethers.formatEther(sendAmount)} XDC`, 'routes'); // Log without PII (recipient)
+
+    // Send funds using blockchain service
+    // Note: blockchain service expects 0x address, checksumAddress is 0x prefixed
+    const tx = await blockchain.sendFunds(user.id, checksumAddress, sendAmount);
+
+    // Record transfer for limits
+    transferLimits.recordTransfer(user.id.toString(), parseFloat(ethers.formatEther(sendAmount)));
+
+    res.json({
+      success: true,
+      txHash: tx.hash,
+      message: 'Transaction submitted successfully'
+    });
+
+  } catch (error: any) {
+    // Log safe error message internally
+    log(`Error sending funds for user ${req.user?.id}: ${error?.message || 'Unknown error'}`, 'routes');
+
+    const errorMessage = error.message || 'Failed to send funds';
+
+    // Handle insufficient funds specifically but generic message
+    if (errorMessage.includes('Insufficient') || errorMessage.includes('gas')) {
+      return res.status(400).json({ error: 'Insufficient funds or gas for transaction' });
+    }
+
+    // Generic error for client
+    res.status(500).json({ error: 'Transaction failed. Please try again later.' });
   }
 });
 
