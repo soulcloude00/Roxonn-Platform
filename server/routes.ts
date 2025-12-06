@@ -1558,15 +1558,22 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Recipient address and amount are required' });
       }
 
-      // Basic address validation
-      const normalizedAddress = toAddress.toLowerCase();
-      if (!normalizedAddress.startsWith('xdc') && !normalizedAddress.startsWith('0x')) {
-        return res.status(400).json({ error: 'Invalid address format' });
+      // Robust address validation (Checksum)
+      let checksumAddress: string;
+      try {
+        // Normalize 'xdc' prefix to '0x' for ethers compatibility
+        let addressToValidate = toAddress;
+        if (addressToValidate.toLowerCase().startsWith('xdc')) {
+          addressToValidate = '0x' + addressToValidate.substring(3);
+        }
+        checksumAddress = ethers.getAddress(addressToValidate);
+      } catch (e) {
+        return res.status(400).json({ error: 'Invalid recipient address format' });
       }
 
       // Parse amount
       let sendAmount: bigint;
-      try {
+      try { // Check transfer limits
         sendAmount = ethers.parseEther(amount.toString());
         if (sendAmount <= BigInt(0)) {
           throw new Error('Amount must be positive');
@@ -1575,10 +1582,20 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Invalid amount' });
       }
 
-      log(`User ${user.id} initiating send of ${amount} XDC to ${toAddress}`, 'routes');
+      // Check transfer limits
+      const limitCheck = transferLimits.checkTransferLimit(user.id.toString(), parseFloat(ethers.formatEther(sendAmount)));
+      if (!limitCheck.allowed) {
+        return res.status(400).json({ error: limitCheck.reason || 'Transfer limit exceeded' });
+      }
+
+      log(`User ${user.id} initiating send of ${ethers.formatEther(sendAmount)} XDC`, 'routes'); // Log without PII (recipient)
 
       // Send funds using blockchain service
-      const tx = await blockchain.sendFunds(user.id, toAddress, sendAmount);
+      // Note: blockchain service expects 0x address, checksumAddress is 0x prefixed
+      const tx = await blockchain.sendFunds(user.id, checksumAddress, sendAmount);
+
+      // Record transfer for limits
+      transferLimits.recordTransfer(user.id.toString(), parseFloat(ethers.formatEther(sendAmount)));
 
       res.json({
         success: true,
@@ -1587,15 +1604,17 @@ export async function registerRoutes(app: Express) {
       });
 
     } catch (error: any) {
-      console.error('Error sending funds:', error);
+      console.error('Error sending funds:', error); // Log full error internally
+
       const errorMessage = error.message || 'Failed to send funds';
 
-      // Handle insufficient funds specifically
+      // Handle insufficient funds specifically but generic message
       if (errorMessage.includes('Insufficient') || errorMessage.includes('gas')) {
-        return res.status(400).json({ error: errorMessage });
+        return res.status(400).json({ error: 'Insufficient funds or gas for transaction' });
       }
 
-      res.status(500).json({ error: 'Transaction failed: ' + errorMessage });
+      // Generic error for client
+      res.status(500).json({ error: 'Transaction failed. Please try again later.' });
     }
   });
 
@@ -3431,7 +3450,7 @@ export async function registerRoutes(app: Express) {
       if (!user) {
         return res.status(401).json({ error: 'User not authenticated' });
       }
-
+ 
       // 1. Estimate cost and check AI credits
       const estimatedCost = estimateRequestCost(req.body);
       log(`Estimated AI cost for user ${user.id}: ${estimatedCost} credits`, 'vscode-ai');
@@ -3446,7 +3465,7 @@ export async function registerRoutes(app: Express) {
           requiredEstimate: estimatedCost
         });
       }
-
+ 
       // 2. Call Azure OpenAI
       log(`Proxying AI request for user ${user.id} to Azure OpenAI`, 'vscode-ai');
       
@@ -3456,10 +3475,10 @@ export async function registerRoutes(app: Express) {
       }
       
       const azureRequestBody = { ...req.body };
-
+ 
       const azureUrl = `${config.azureOpenaiEndpoint}/openai/deployments/${config.azureOpenaiDeploymentName}/chat/completions?api-version=${config.azureOpenaiApiVersion}`;
       log(`Azure request URL: ${azureUrl}`, 'vscode-ai');
-
+ 
       const aiServiceResponse = await fetch(azureUrl, {
         method: 'POST',
         headers: {
@@ -3468,7 +3487,7 @@ export async function registerRoutes(app: Express) {
         },
         body: JSON.stringify(azureRequestBody)
       });
-
+ 
       if (!aiServiceResponse.ok) {
         const errorBody = await aiServiceResponse.text();
         log(`Azure OpenAI request failed with status ${aiServiceResponse.status}: ${errorBody}`, 'vscode-ai');
@@ -3480,7 +3499,7 @@ export async function registerRoutes(app: Express) {
       }
       
       const responseData = await aiServiceResponse.json();
-
+ 
       // 3. Calculate actual cost from usage and deduct credits
       if (responseData.usage && responseData.usage.prompt_tokens !== undefined && responseData.usage.completion_tokens !== undefined) {
         const actualCost = calculateTokenCost(
@@ -3521,7 +3540,7 @@ export async function registerRoutes(app: Express) {
       }
     }
   });
-
+ 
   // Additional endpoint for OpenAI client which appends /chat/completions to the base URL
   // This matches the endpoint format that the OpenAI client expects
   app.post('/api/vscode/ai/chat/completions', passport.authenticate('jwt', { session: false, failWithError: false }), requireVSCodeAuth, async (req: Request, res: Response) => {
@@ -3531,7 +3550,7 @@ export async function registerRoutes(app: Express) {
       if (!user) {
         return res.status(401).json({ error: 'User not authenticated' });
       }
-
+ 
       // 1. Estimate cost and check AI credits
       const estimatedCost = estimateRequestCost(req.body);
       log(`Estimated AI cost for user ${user.id}: ${estimatedCost} credits`, 'vscode-ai');
@@ -3546,7 +3565,7 @@ export async function registerRoutes(app: Express) {
           requiredEstimate: estimatedCost
         });
       }
-
+ 
       // 2. Call Azure OpenAI
       log(`Proxying AI request for user ${user.id} to Azure OpenAI`, 'vscode-ai');
       
@@ -3556,10 +3575,10 @@ export async function registerRoutes(app: Express) {
       }
       
       const azureRequestBody = { ...req.body };
-
+ 
       const azureUrl = `${config.azureOpenaiEndpoint}/openai/deployments/${config.azureOpenaiDeploymentName}/chat/completions?api-version=${config.azureOpenaiApiVersion}`;
       log(`Azure request URL: ${azureUrl}`, 'vscode-ai');
-
+ 
       const aiServiceResponse = await fetch(azureUrl, {
         method: 'POST',
         headers: {
@@ -3568,7 +3587,7 @@ export async function registerRoutes(app: Express) {
         },
         body: JSON.stringify(azureRequestBody)
       });
-
+ 
       if (!aiServiceResponse.ok) {
         const errorBody = await aiServiceResponse.text();
         log(`Azure OpenAI request failed with status ${aiServiceResponse.status}: ${errorBody}`, 'vscode-ai');
@@ -3580,7 +3599,7 @@ export async function registerRoutes(app: Express) {
       }
       
       const responseData = await aiServiceResponse.json();
-
+ 
       // 3. Calculate actual cost from usage and deduct credits
       if (responseData.usage && responseData.usage.prompt_tokens !== undefined && responseData.usage.completion_tokens !== undefined) {
         const actualCost = calculateTokenCost(

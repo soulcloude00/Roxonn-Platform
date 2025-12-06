@@ -155,8 +155,8 @@ function TransactionItem({
       <div className="flex items-center gap-4">
         <div
           className={`p-2 rounded-lg ${type === "in"
-              ? "bg-emerald-500/10 text-emerald-500"
-              : "bg-rose-500/10 text-rose-500"
+            ? "bg-emerald-500/10 text-emerald-500"
+            : "bg-rose-500/10 text-rose-500"
             }`}
         >
           {type === "in" ? (
@@ -443,15 +443,32 @@ export default function WalletNewPage() {
   }
 
   // Mock transactions removed - using useTransactions hook now
-  const transactions = realTransactions ? realTransactions.map(tx => ({
-    // Map API transaction format to UI format
-    type: (tx.isIncoming ? "in" : "out") as "in" | "out",
-    amount: parseFloat(tx.value).toFixed(4), // Ensure consistent formatting
-    currency: "XDC",
-    hash: tx.hash,
-    timestamp: new Date(tx.timestamp).toLocaleString(), // Format date
-    status: tx.status,
-  })) : [];
+  const transactions = realTransactions ? realTransactions.map(tx => {
+    let formattedAmount = "0.0000";
+    try {
+      // Handle cases where value might be Wei (bigint string) or already formatted
+      // Assuming backend returns Wei as string based on review feedback context
+      // Safety check: if it looks like a small float, it might already be ether (legacy mock data format), 
+      // but real blockchain data is usually BigInt/Wei.
+      // Given it's from 'blockchain.getRecentTransactions', let's treat it safely.
+      // However, typical ethers providers return formatted strings or BigInts.
+      // Let's safe-guard:
+      formattedAmount = ethers.formatEther(tx.value);
+    } catch (e) {
+      // Fallback if formatting fails (e.g. if already decimal string)
+      formattedAmount = tx.value;
+    }
+
+    return {
+      // Map API transaction format to UI format
+      type: (tx.isIncoming ? "in" : "out") as "in" | "out",
+      amount: parseFloat(formattedAmount).toFixed(4), // Ensure consistent formatting
+      currency: "XDC",
+      hash: tx.hash,
+      timestamp: new Date(tx.timestamp).toLocaleString(), // Format date
+      status: tx.status,
+    };
+  }) : [];
 
   return (
     <div className="min-h-screen bg-background noise-bg">
