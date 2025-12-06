@@ -377,7 +377,10 @@ export default function WalletNewPage() {
   // Handle Send XDC
   const handleSend = async () => {
     try {
-      if (!sendAddress || !sendAmount) {
+      const trimmedAddress = sendAddress.trim();
+      const trimmedAmount = sendAmount.trim();
+
+      if (!trimmedAddress || !trimmedAmount) {
         addNotification({
           type: "error",
           title: "Validation Error",
@@ -388,8 +391,8 @@ export default function WalletNewPage() {
       }
 
       // Validate address format
-      const addressPattern = /^(xdc|0x)[a-fA-F0-9]{40}$/i;
-      if (!addressPattern.test(sendAddress)) {
+      const addressPattern = /^(xdc|0x)[a-fA-F0-9]{40}$/;
+      if (!addressPattern.test(trimmedAddress)) {
         addNotification({
           type: "error",
           title: "Invalid Address",
@@ -400,7 +403,7 @@ export default function WalletNewPage() {
       }
 
       // Validate amount
-      const amountNum = parseFloat(sendAmount);
+      const amountNum = parseFloat(trimmedAmount);
       if (isNaN(amountNum) || amountNum <= 0) {
         addNotification({
           type: "error",
@@ -436,8 +439,8 @@ export default function WalletNewPage() {
         },
         credentials: "include",
         body: JSON.stringify({
-          toAddress: sendAddress,
-          amount: sendAmount,
+          toAddress: trimmedAddress,
+          amount: trimmedAmount,
         }),
       });
 
@@ -450,7 +453,7 @@ export default function WalletNewPage() {
       addNotification({
         type: "success",
         title: "Transaction Sent",
-        message: "Funds sent successfully!",
+        message: `Funds sent successfully! Tx: ${data.txHash?.slice(0, 10)}...`,
         duration: 5000,
       });
 
@@ -485,7 +488,9 @@ export default function WalletNewPage() {
     let formattedAmount = "0.0000";
     try {
       // Handle cases where value might be Wei (bigint string) or already formatted
-      // Assuming backend returns Wei as string based on review feedback context
+      // Assuming backend returns Wei as string based on review feedback context.
+      // Standard Ethers.js providers return BigInt or formatted strings.
+      // We safe-guard by trying to format as Ether first.
       formattedAmount = ethers.formatEther(tx.value);
     } catch (e) {
       // Fallback for already-formatted string values or non-wei values
