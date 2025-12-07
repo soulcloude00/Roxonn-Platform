@@ -39,7 +39,8 @@ interface WalletBalance {
  *       - in: path
  *         name: userId
  *         required: true
- *         schema: { type: integer }
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
  *         description: List of wallet balances

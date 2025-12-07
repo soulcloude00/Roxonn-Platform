@@ -482,8 +482,8 @@ router.post('/export-request', requireAuth, csrfProtection, async (req: Request,
 
     if (!email) return res.status(400).json({ error: 'No email on account' });
 
-    // Generate 6-digit numeric code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate 6-digit numeric code using cryptographically secure random
+    const code = crypto.randomInt(100000, 1000000).toString();
     const expires = Date.now() + 5 * 60 * 1000; // 5 min
 
     otpStore.set(userId, { code, expires });
@@ -692,6 +692,14 @@ router.post('/send', requireAuth, csrfProtection, async (req, res) => {
         addressToValidate = '0x' + addressToValidate.substring(3);
       }
       checksumAddress = ethers.getAddress(addressToValidate);
+
+      // Prevent sending to self (QODO suggestion)
+      if (user.xdcWalletAddress) {
+        const senderAddress = ethers.getAddress(user.xdcWalletAddress);
+        if (checksumAddress === senderAddress) {
+          return res.status(400).json({ error: 'Recipient address cannot be the same as sender address' });
+        }
+      }
     } catch (e) {
       return res.status(400).json({ error: 'Invalid recipient address format' });
     }

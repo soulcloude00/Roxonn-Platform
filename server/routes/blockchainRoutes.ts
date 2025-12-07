@@ -488,7 +488,11 @@ router.post('/fund-roxn/:repoId', requireAuth, csrfProtection, async (req: Reque
       roxnAmount,
       req.user.id
     );
-    res.json({ message: 'ROXN funding transaction submitted successfully.', transactionHash: txResponse?.hash });
+    if (txResponse?.hash) {
+      res.json({ message: 'ROXN funding transaction submitted successfully.', transactionHash: txResponse.hash });
+    } else {
+      res.status(500).json({ error: 'Transaction submitted but no hash returned' });
+    }
   } catch (error: any) {
     log(`Error funding repository ${req.params.repoId} with ROXN (Unified System): ${error.message}`, 'routes-unified-ERROR');
     res.status(500).json({ error: 'Failed to fund repository with ROXN', details: error.message });
@@ -550,7 +554,11 @@ router.post('/fund-usdc/:repoId', requireAuth, csrfProtection, async (req: Reque
 
     log(`User ${req.user.id} attempting to fund repository ${repoId} with ${usdcAmount} USDC (Unified System)`, 'routes-unified');
     const txResponse = await blockchain.addUSDCFundToRepository(parseInt(repoId), usdcAmount, req.user.id);
-    res.json({ message: 'USDC funding transaction submitted successfully.', transactionHash: txResponse?.hash });
+    if (txResponse?.hash) {
+      res.json({ message: 'USDC funding transaction submitted successfully.', transactionHash: txResponse.hash });
+    } else {
+      res.status(500).json({ error: 'Transaction submitted but no hash returned' });
+    }
   } catch (error: any) {
     log(`Error funding repository ${req.params.repoId} with USDC (Unified System): ${error.message}`, 'routes-unified-ERROR');
     res.status(500).json({ error: 'Failed to fund repository with USDC', details: error.message });
@@ -870,14 +878,14 @@ router.post('/repository/:repoId/initialize', requireAuth, csrfProtection, async
       req.user.id
     );
 
-    if (receipt) {
+    if (receipt?.hash) {
       res.json({
         message: 'Repository initialized successfully',
         transactionHash: receipt.hash,
         poolManager: userAddress,
       });
     } else {
-      res.status(500).json({ error: 'Failed to initialize repository' });
+      res.status(500).json({ error: 'Failed to initialize repository: No transaction hash returned' });
     }
   } catch (error: any) {
     log(`Error initializing repository ${req.params.repoId}: ${error.message}`, 'routes-init-ERROR');

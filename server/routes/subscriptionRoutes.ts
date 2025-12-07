@@ -162,7 +162,12 @@ router.post('/crypto/init', requireAuth, csrfProtection, async (req, res) => {
  *         content:
  *           application/json:
  *             schema:
- *               type: object
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   chainId: { type: string }
+ *                   name: { type: string }
  */
 router.get('/crypto/networks', async (req, res) => {
   try {
