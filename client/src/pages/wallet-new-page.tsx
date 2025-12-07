@@ -32,7 +32,18 @@ import {
   Clock,
   ChevronRight,
   Loader2,
+  Send,
 } from "lucide-react";
+import { useTransactions } from "@/hooks/use-transactions";
+import csrfService from "@/lib/csrf";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
 
 // Animation variants
 const containerVariants = {
@@ -143,11 +154,10 @@ function TransactionItem({
     >
       <div className="flex items-center gap-4">
         <div
-          className={`p-2 rounded-lg ${
-            type === "in"
+          className={`p-2 rounded-lg ${type === "in"
               ? "bg-emerald-500/10 text-emerald-500"
               : "bg-rose-500/10 text-rose-500"
-          }`}
+            }`}
         >
           {type === "in" ? (
             <ArrowDownRight className="w-5 h-5" />
@@ -167,9 +177,8 @@ function TransactionItem({
 
       <div className="text-right">
         <p
-          className={`font-mono font-semibold ${
-            type === "in" ? "text-emerald-500" : "text-rose-500"
-          }`}
+          className={`font-mono font-semibold ${type === "in" ? "text-emerald-500" : "text-rose-500"
+            }`}
         >
           {type === "in" ? "+" : "-"}{amount} {currency}
         </p>
@@ -257,10 +266,18 @@ function QRModal({ address }: { address: string }) {
 export default function WalletNewPage() {
   const { user, loading: authLoading } = useAuth();
   const { data: walletInfo, isLoading: walletLoading, refetch } = useWallet();
+  const { data: realTransactions, isLoading: isTransactionsLoading, refetch: refetchTransactions } = useTransactions(20);
   const { addNotification } = useNotification();
   const [copied, setCopied] = useState(false);
   const [isBuying, setIsBuying] = useState(false);
   const [isSelling, setIsSelling] = useState(false);
+
+  // Send state
+  const [isSending, setIsSending] = useState(false);
+  const [sendAddress, setSendAddress] = useState("");
+  const [sendAmount, setSendAmount] = useState("");
+  const [isConfirmingSend, setIsConfirmingSend] = useState(false);
+  const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
 
   // Fetch USDC balance
   const { data: usdcBalance, isLoading: usdcLoading, refetch: refetchUsdc } = useQuery({
@@ -357,30 +374,84 @@ export default function WalletNewPage() {
     }
   };
 
+  // Handle Send XDC
+  const handleSend = async () => {
+    try {
+      if (!sendAddress || !sendAmount) {
+        addNotification({
+          type: "error",
+          title: "Validation Error",
+          message: "Please enter both address and amount",
+          duration: 3000,
+        });
+        return;
+      }
+
+      setIsConfirmingSend(true);
+      const csrfToken = await csrfService.getToken();
+
+      const response = await fetch(`${STAGING_API_URL}/api/wallet/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          toAddress: sendAddress,
+          amount: sendAmount,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send funds");
+      }
+
+      addNotification({
+        type: "success",
+        title: "Transaction Sent",
+        message: "Funds sent successfully!",
+        duration: 5000,
+      });
+
+      // Close dialog and reset state
+      setIsSendDialogOpen(false);
+      setSendAddress("");
+      setSendAmount("");
+
+      // Refresh data
+      refetch();
+      refetchTransactions();
+
+    } catch (error) {
+      addNotification({
+        type: "error",
+        title: "Transaction Error",
+        message: error instanceof Error ? error.message : "Failed to send funds",
+        duration: 5000,
+      });
+    } finally {
+      setIsConfirmingSend(false);
+    }
+  };
+
   // Auth redirect
   if (!authLoading && !user) {
     return <Redirect to="/auth" />;
   }
 
-  // Mock transactions (in production, fetch from API)
-  const transactions = [
-    {
-      type: "in" as const,
-      amount: "150.00",
-      currency: "XDC",
-      hash: "0x1234567890abcdef1234567890abcdef12345678",
-      timestamp: "2 hours ago",
-      status: "confirmed" as const,
-    },
-    {
-      type: "out" as const,
-      amount: "25.50",
-      currency: "XDC",
-      hash: "0xabcdef1234567890abcdef1234567890abcdef12",
-      timestamp: "1 day ago",
-      status: "confirmed" as const,
-    },
-  ];
+  // Mock transactions removed - using useTransactions hook now
+  const transactions = realTransactions ? realTransactions.map(tx => ({
+    // Map API transaction format to UI format
+    type: (tx.isIncoming ? "in" : "out") as "in" | "out",
+    amount: parseFloat(tx.value).toFixed(4), // Ensure consistent formatting
+    currency: "XDC",
+    hash: tx.hash,
+    timestamp: new Date(tx.timestamp).toLocaleString(), // Format date
+    status: tx.status,
+  })) : [];
 
   return (
     <div className="min-h-screen bg-background noise-bg">
@@ -408,6 +479,7 @@ export default function WalletNewPage() {
               onClick={() => {
                 refetch();
                 refetchUsdc();
+                refetchTransactions();
               }}
               disabled={walletLoading || usdcLoading}
             >
@@ -536,8 +608,90 @@ export default function WalletNewPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
         >
+          {/* Send XDC Card */}
+          <div className="card-noir p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-500">
+                <Send className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Send XDC</h3>
+                <p className="text-sm text-muted-foreground">Transfer to another wallet</p>
+              </div>
+            </div>
+
+            <Dialog open={isSendDialogOpen} onOpenChange={setIsSendDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="w-full btn-primary" variant="outline">
+                  <Send className="w-4 h-4 mr-2" />
+                  Send Funds
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Send XDC</DialogTitle>
+                  <DialogDescription>
+                    Enter the recipient's wallet address and amount to send.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Recipient Address</Label>
+                    <Input
+                      id="address"
+                      placeholder="xdc... or 0x..."
+                      value={sendAddress}
+                      onChange={(e) => setSendAddress(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="amount">Amount (XDC)</Label>
+                    <div className="relative">
+                      <Input
+                        id="amount"
+                        type="number"
+                        placeholder="0.00"
+                        value={sendAmount}
+                        onChange={(e) => setSendAmount(e.target.value)}
+                        className="pr-12"
+                      />
+                      <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-muted-foreground text-sm">
+                        XDC
+                      </div>
+                    </div>
+                    {walletInfo?.balance && (
+                      <p className="text-xs text-muted-foreground text-right">
+                        Available: {parseFloat(ethers.formatEther(walletInfo.balance)).toFixed(4)} XDC
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsSendDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSend} disabled={isConfirmingSend || !sendAddress || !sendAmount}>
+                    {isConfirmingSend ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 mr-2" />
+                        Confirm Send
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <p className="text-xs text-muted-foreground mt-2">
+              Instant transfer on XDC Network
+            </p>
+          </div>
           <div className="card-noir p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
