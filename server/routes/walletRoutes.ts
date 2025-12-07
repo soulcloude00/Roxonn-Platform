@@ -398,6 +398,33 @@ router.get('/sell-xdc-url', requireAuth, csrfProtection, async (req, res) => {
 });
 
 // Get onramp.money transactions for user wallet
+/**
+ * @openapi
+ * /api/wallet/onramp-transactions:
+ *   get:
+ *     summary: Get Onramp.money transaction history
+ *     tags: [Wallet]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *     responses:
+ *       200:
+ *         description: List of onramp transactions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 transactions:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/OnrampTransaction'
+ *       401:
+ *         description: Unauthorized
+ */
 router.get('/onramp-transactions', requireAuth, csrfProtection, async (req, res) => {
   try {
     const user = req.user;
@@ -424,6 +451,28 @@ router.get('/onramp-transactions', requireAuth, csrfProtection, async (req, res)
 });
 
 // Endpoint to request an OTP for wallet export
+/**
+ * @openapi
+ * /api/wallet/export-request:
+ *   post:
+ *     summary: Request OTP for wallet export
+ *     tags: [Wallet]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: OTP sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *       400:
+ *         description: Bad request (e.g., no email)
+ *       401:
+ *         description: Unauthorized
+ */
 router.post('/export-request', requireAuth, csrfProtection, async (req: Request, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Auth required' });
@@ -449,6 +498,40 @@ router.post('/export-request', requireAuth, csrfProtection, async (req: Request,
 });
 
 // Wallet export endpoint for MetaMask integration
+/**
+ * @openapi
+ * /api/wallet/export-data:
+ *   post:
+ *     summary: Export wallet data (encrypted)
+ *     tags: [Wallet]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - otp
+ *               - ephemeralPublicKey
+ *             properties:
+ *               otp: { type: string }
+ *               ephemeralPublicKey: { type: string }
+ *     responses:
+ *       200:
+ *         description: Encrypted wallet data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/WalletExportResponse'
+ *       401:
+ *         description: Unauthorized or Invalid OTP
+ *       403:
+ *         description: Forbidden (Role access or Rate limit)
+ *       429:
+ *         description: Rate limit exceeded
+ */
 router.post('/export-data', requireAuth, csrfProtection, requireOtp, async (req: Request, res: Response) => {
   try {
     if (!req.user) {

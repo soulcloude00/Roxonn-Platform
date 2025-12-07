@@ -323,6 +323,37 @@ router.post('/repository-rewards', async (req: Request, res: Response) => {
 // --- Unified Dual Currency Rewards System Routes ---
 
 // Approve ROXN spending for the unified rewards contract
+/**
+ * @openapi
+ * /api/blockchain/approve-roxn:
+ *   post:
+ *     summary: Approve ROXN spending
+ *     tags: [Blockchain]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - amount
+ *             properties:
+ *               amount: { type: string }
+ *     responses:
+ *       200:
+ *         description: Approval transaction submitted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string }
+ *                 transactionHash: { type: string }
+ *       401:
+ *         description: Unauthorized
+ */
 router.post('/approve-roxn', requireAuth, csrfProtection, async (req: Request, res: Response) => {
   try {
     const { amount } = req.body; // Spender is always the main rewards contract now
@@ -358,6 +389,26 @@ router.post('/approve-roxn', requireAuth, csrfProtection, async (req: Request, r
 });
 
 // Get ROXN allowance for the unified rewards contract
+/**
+ * @openapi
+ * /api/blockchain/roxn-allowance:
+ *   get:
+ *     summary: Get ROXN allowance for rewards contract
+ *     tags: [Blockchain]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Allowance amount
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 allowance: { type: string }
+ *       401:
+ *         description: Unauthorized
+ */
 router.get('/roxn-allowance', requireAuth, async (req: Request, res: Response) => {
   try {
     if (!req.user || !req.user.xdcWalletAddress) {
@@ -378,6 +429,44 @@ router.get('/roxn-allowance', requireAuth, async (req: Request, res: Response) =
 
 // Fund a repository with ROXN (Unified System)
 // Path changed from /api/blockchain/new-roxn/fund/:repoId
+/**
+ * @openapi
+ * /api/blockchain/fund-roxn/{repoId}:
+ *   post:
+ *     summary: Fund repository with ROXN
+ *     tags: [Blockchain]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: repoId
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - roxnAmount
+ *             properties:
+ *               roxnAmount: { type: string }
+ *     responses:
+ *       200:
+ *         description: Funding successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string }
+ *                 transactionHash: { type: string }
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Pool Manager only)
+ */
 router.post('/fund-roxn/:repoId', requireAuth, csrfProtection, async (req: Request, res: Response) => {
   try {
     const { repoId } = req.params;
@@ -407,6 +496,44 @@ router.post('/fund-roxn/:repoId', requireAuth, csrfProtection, async (req: Reque
 });
 
 // Fund a repository with USDC (Unified System)
+/**
+ * @openapi
+ * /api/blockchain/fund-usdc/{repoId}:
+ *   post:
+ *     summary: Fund repository with USDC
+ *     tags: [Blockchain]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: repoId
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - usdcAmount
+ *             properties:
+ *               usdcAmount: { type: string }
+ *     responses:
+ *       200:
+ *         description: Funding successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string }
+ *                 transactionHash: { type: string }
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Pool Manager only)
+ */
 router.post('/fund-usdc/:repoId', requireAuth, csrfProtection, async (req: Request, res: Response) => {
   try {
     const { repoId } = req.params;
@@ -433,6 +560,47 @@ router.post('/fund-usdc/:repoId', requireAuth, csrfProtection, async (req: Reque
 // Allocate a bounty (XDC, ROXN, or USDC) to an issue (Unified System)
 // This replaces old /api/blockchain/repository/:repoId/issue/:issueId/reward
 // and old /api/blockchain/new-roxn/allocate/:repoId/:issueId
+/**
+ * @openapi
+ * /api/blockchain/allocate-bounty/{repoId}/{issueId}:
+ *   post:
+ *     summary: Allocate bounty to an issue
+ *     tags: [Blockchain]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: repoId
+ *         required: true
+ *         schema: { type: integer }
+ *       - in: path
+ *         name: issueId
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - bountyAmount
+ *               - currencyType
+ *             properties:
+ *               bountyAmount: { type: string }
+ *               currencyType: { type: string, enum: [XDC, ROXN, USDC] }
+ *     responses:
+ *       200:
+ *         description: Bounty allocated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/BountyAllocation'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
 router.post('/allocate-bounty/:repoId/:issueId', requireAuth, csrfProtection, async (req: Request, res: Response) => {
   try {
     const { repoId, issueId } = req.params;
@@ -489,6 +657,48 @@ router.post('/allocate-bounty/:repoId/:issueId', requireAuth, csrfProtection, as
 // Distribute a bounty (Unified System)
 // Path changed from /api/blockchain/new-roxn/distribute/:repoId/:issueId
 // and replaces old /api/blockchain/repository/:repoId/issue/:issueId/distribute
+/**
+ * @openapi
+ * /api/blockchain/distribute-bounty/{repoId}/{issueId}:
+ *   post:
+ *     summary: Distribute bounty to contributor
+ *     tags: [Blockchain]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: repoId
+ *         required: true
+ *         schema: { type: integer }
+ *       - in: path
+ *         name: issueId
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - contributorAddress
+ *             properties:
+ *               contributorAddress: { type: string }
+ *     responses:
+ *       200:
+ *         description: Bounty distributed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string }
+ *                 transactionHash: { type: string }
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
 router.post('/distribute-bounty/:repoId/:issueId', requireAuth, csrfProtection, async (req: Request, res: Response) => {
   try {
     const { repoId, issueId } = req.params;
@@ -523,6 +733,27 @@ router.post('/distribute-bounty/:repoId/:issueId', requireAuth, csrfProtection, 
 // Get unified pool info for a repository (replaces GET /api/blockchain/new-roxn/pool/:repoId)
 // and also effectively replaces GET /api/blockchain/repository/:repoId for pool info
 // Made PUBLIC: Removed requireAuth
+/**
+ * @openapi
+ * /api/blockchain/pool-info/{repoId}:
+ *   get:
+ *     summary: Get unified pool info for a repository
+ *     tags: [Blockchain]
+ *     parameters:
+ *       - in: path
+ *         name: repoId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Pool information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Repository'
+ *       500:
+ *         description: Error fetching pool info
+ */
 router.get('/pool-info/:repoId', async (req: Request, res: Response) => {
   try {
     const { repoId } = req.params;
@@ -536,6 +767,31 @@ router.get('/pool-info/:repoId', async (req: Request, res: Response) => {
 });
 
 // Diagnostic endpoint to check repository initialization status
+/**
+ * @openapi
+ * /api/blockchain/repository/{repoId}/status:
+ *   get:
+ *     summary: Check repository initialization status
+ *     tags: [Blockchain]
+ *     parameters:
+ *       - in: path
+ *         name: repoId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Repository status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 isInitialized: { type: boolean }
+ *                 repoId: { type: integer }
+ *                 recommendation: { type: string }
+ *       500:
+ *         description: Error checking status
+ */
 router.get(
   '/repository/:repoId/status',
   securityMiddlewares.repoRateLimiter,
@@ -562,6 +818,35 @@ router.get(
 );
 
 // Initialize repository endpoint (for pool managers)
+/**
+ * @openapi
+ * /api/blockchain/repository/{repoId}/initialize:
+ *   post:
+ *     summary: Initialize repository on blockchain
+ *     tags: [Blockchain]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: repoId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Initialization successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string }
+ *                 transactionHash: { type: string }
+ *                 poolManager: { type: string }
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Pool Manager only)
+ */
 router.post('/repository/:repoId/initialize', requireAuth, csrfProtection, async (req: Request, res: Response) => {
   try {
     const { repoId } = req.params;
@@ -601,6 +886,33 @@ router.post('/repository/:repoId/initialize', requireAuth, csrfProtection, async
 });
 
 // Get unified bounty details for a specific issue (replaces GET /api/blockchain/new-roxn/issue/:repoId/:issueId)
+/**
+ * @openapi
+ * /api/blockchain/issue-bounty/{repoId}/{issueId}:
+ *   get:
+ *     summary: Get unified bounty details for an issue
+ *     tags: [Blockchain]
+ *     parameters:
+ *       - in: path
+ *         name: repoId
+ *         required: true
+ *         schema: { type: integer }
+ *       - in: path
+ *         name: issueId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Bounty details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/IssueBountyDetails'
+ *       404:
+ *         description: Bounty details not found
+ *       500:
+ *         description: Error fetching details
+ */
 router.get('/issue-bounty/:repoId/:issueId', async (req: Request, res: Response) => {
   try {
     const { repoId, issueId } = req.params;
