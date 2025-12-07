@@ -152,9 +152,19 @@ router.get('/multi-currency-balances/:userId', requireAuth, async (req, res) => 
  *                   type: array
  *                   items:
  *                     type: object
+ *                     properties:
+ *                       name: { type: string }
+ *                       network: { type: string }
+ *                       chainId: { type: integer }
+ *                       nativeCurrency: { type: object }
  *                 supportedTokens:
  *                   type: array
- *                   items: { type: string }
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       symbol: { type: string }
+ *                       address: { type: string }
+ *                       decimals: { type: integer }
  */
 router.get('/supported-currencies', async (req, res) => {
   try {
