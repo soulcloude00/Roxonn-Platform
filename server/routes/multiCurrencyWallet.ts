@@ -50,6 +50,8 @@ interface WalletBalance {
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/WalletBalance'
+ *       401:
+ *         description: Unauthorized
  *       403:
  *         description: Access denied
  *       404:

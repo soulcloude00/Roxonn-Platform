@@ -667,6 +667,8 @@ router.post('/export-data', requireAuth, csrfProtection, requireOtp, async (req:
  *         description: Transaction submitted successfully
  *       400:
  *         description: Invalid input or insufficient funds
+ *       429:
+ *         description: Transfer limit exceeded
  *       401:
  *         description: Unauthorized
  */
