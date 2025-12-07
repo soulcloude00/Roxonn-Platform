@@ -697,7 +697,11 @@ router.post('/send', requireAuth, csrfProtection, async (req, res) => {
 
       // Prevent sending to self (QODO suggestion)
       if (user.xdcWalletAddress) {
-        const senderAddress = ethers.getAddress(user.xdcWalletAddress);
+        let senderAddressToValidate = user.xdcWalletAddress;
+        if (senderAddressToValidate.toLowerCase().startsWith('xdc')) {
+          senderAddressToValidate = '0x' + senderAddressToValidate.substring(3);
+        }
+        const senderAddress = ethers.getAddress(senderAddressToValidate);
         if (checksumAddress === senderAddress) {
           return res.status(400).json({ error: 'Recipient address cannot be the same as sender address' });
         }
@@ -720,7 +724,7 @@ router.post('/send', requireAuth, csrfProtection, async (req, res) => {
     // Check transfer limits
     const limitCheck = transferLimits.checkTransferLimit(user.id.toString(), parseFloat(ethers.formatEther(sendAmount)));
     if (!limitCheck.allowed) {
-      return res.status(400).json({ error: limitCheck.reason || 'Transfer limit exceeded' });
+      return res.status(429).json({ error: limitCheck.reason || 'Transfer limit exceeded' });
     }
 
     log(`User ${user.id} initiating send of ${ethers.formatEther(sendAmount)} XDC`, 'routes'); // Log without PII (recipient)
