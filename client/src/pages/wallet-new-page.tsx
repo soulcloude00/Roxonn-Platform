@@ -488,28 +488,26 @@ export default function WalletNewPage() {
     return <Redirect to="/auth" />;
   }
 
-  // Mock transactions removed - using useTransactions hook now
+  // Map real transactions from API to UI format
   const transactions = realTransactions ? realTransactions.map(tx => {
-    let formattedAmount = "0.0000";
-    try {
-      // Handle cases where value might be Wei (bigint string) or already formatted
-      // Assuming backend returns Wei as string based on review feedback context.
-      // Standard Ethers.js providers return BigInt or formatted strings.
-      // We safe-guard by trying to format as Ether first.
-      formattedAmount = ethers.formatEther(tx.value);
-    } catch (e) {
-      // Fallback for already-formatted string values or non-wei values
-      const parsed = parseFloat(tx.value);
-      formattedAmount = isNaN(parsed) ? "0.0000" : parsed.toFixed(4);
+    // Use tokenAmount from backend if available (properly formatted)
+    // Otherwise fall back to formatting the value field
+    let formattedAmount = tx.tokenAmount || "0.0000";
+    if (!tx.tokenAmount && tx.value && tx.value !== '0') {
+      try {
+        formattedAmount = ethers.formatEther(tx.value);
+      } catch (e) {
+        const parsed = parseFloat(tx.value);
+        formattedAmount = isNaN(parsed) ? "0.0000" : parsed.toFixed(4);
+      }
     }
 
     return {
-      // Map API transaction format to UI format
       type: (tx.isIncoming ? "in" : "out") as "in" | "out",
-      amount: parseFloat(formattedAmount).toFixed(4), // Ensure consistent formatting
-      currency: "XDC",
+      amount: parseFloat(formattedAmount).toFixed(4),
+      currency: tx.tokenSymbol || "XDC",  // Use token symbol from backend
       hash: tx.hash,
-      timestamp: new Date(tx.timestamp).toLocaleString(), // Format date
+      timestamp: new Date(tx.timestamp).toLocaleString(),
       status: tx.status,
     };
   }) : [];
