@@ -179,7 +179,9 @@ export default function LeaderboardPage() {
                                                     </div>
                                                     {/* Mobile View Summary */}
                                                     <div className="text-right sm:hidden">
-                                                        <span className="font-bold text-purple-400">{contributor.roxnEarned} R</span>
+                                                        <span className="flex items-center gap-1 font-mono font-bold text-purple-400">
+                                                            <Coins className="w-3 h-3" /> {contributor.roxnEarned} ROXN
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </CardContent>
