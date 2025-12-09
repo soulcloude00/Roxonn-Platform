@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Medal, Rocket, Users, FolderKanban, Loader2, DollarSign, Coins } from "lucide-react";
+import { Trophy, Medal, Rocket, Users, FolderKanban, Loader2, DollarSign, Coins, AlertCircle } from "lucide-react";
 
 // Types for Leaderboard Data
 interface Contributor {
@@ -43,7 +43,7 @@ export default function LeaderboardPage() {
     const [activeTab, setActiveTab] = useState("contributors");
 
     // Fetch Contributors Data
-    const { data: contributors, isLoading: isLoadingContributors } = useQuery<Contributor[]>({
+    const { data: contributors, isLoading: isLoadingContributors, error: contributorsError } = useQuery<Contributor[]>({
         queryKey: ["leaderboard", "contributors"],
         queryFn: async () => {
             const res = await fetch("/api/leaderboard/contributors");
@@ -53,7 +53,7 @@ export default function LeaderboardPage() {
     });
 
     // Fetch Projects Data
-    const { data: projects, isLoading: isLoadingProjects } = useQuery<Project[]>({
+    const { data: projects, isLoading: isLoadingProjects, error: projectsError } = useQuery<Project[]>({
         queryKey: ["leaderboard", "projects"],
         queryFn: async () => {
             const res = await fetch("/api/leaderboard/projects");
@@ -125,6 +125,16 @@ export default function LeaderboardPage() {
                             <div className="flex justify-center py-20">
                                 <Loader2 className="w-10 h-10 animate-spin text-primary" />
                             </div>
+                        ) : contributorsError ? (
+                            <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
+                                <AlertCircle className="w-10 h-10 mb-4 text-destructive" />
+                                <p>Failed to load contributors.</p>
+                            </div>
+                        ) : contributors?.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
+                                <Users className="w-10 h-10 mb-4 opacity-20" />
+                                <p>No contributors found yet.</p>
+                            </div>
                         ) : (
                             <motion.div
                                 variants={containerVariants}
@@ -184,6 +194,16 @@ export default function LeaderboardPage() {
                         {isLoadingProjects ? (
                             <div className="flex justify-center py-20">
                                 <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                            </div>
+                        ) : projectsError ? (
+                            <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
+                                <AlertCircle className="w-10 h-10 mb-4 text-destructive" />
+                                <p>Failed to load projects.</p>
+                            </div>
+                        ) : projects?.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
+                                <FolderKanban className="w-10 h-10 mb-4 opacity-20" />
+                                <p>No projects found yet.</p>
                             </div>
                         ) : (
                             <motion.div

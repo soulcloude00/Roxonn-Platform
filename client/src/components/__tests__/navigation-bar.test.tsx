@@ -129,6 +129,24 @@ describe('NavigationBar', () => {
     // Component should handle loading state
     expect(useAuth).toHaveBeenCalled();
   });
+
+  it('should display leaderboard link', () => {
+    (useAuth as any).mockReturnValue({
+      user: null,
+      loading: false,
+      signOut: vi.fn(),
+    });
+
+    (useWallet as any).mockReturnValue({
+      data: null,
+      isLoading: false,
+    });
+
+    render(<NavigationBar />);
+
+    // Check if leaderboard link is present
+    expect(screen.getAllByText(/Leaderboard/i).length).toBeGreaterThan(0);
+  });
 });
 
 

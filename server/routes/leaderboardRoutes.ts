@@ -63,48 +63,29 @@ router.get('/contributors', async (req, res) => {
  */
 router.get('/projects', async (req, res) => {
     try {
-        // Aggregate bounties per repository to calculate "Total Value Distributed"
-        // Join registeredRepositories with multiCurrencyBounties
-
-        // 1. Get all bounties grouped by repoId
-        const bountyStats = await db.select({
-            repoId: multiCurrencyBounties.repoId,
-            totalBounties: sql<number>`count(*)`,
-            // We can't easily sum mixed currencies (ROXN vs USDC) into one number in SQL without a conversion rate.
-            // For MVP, we'll fetch them and process or just count "active bounties"
+        // Aggregate bounties per repository to calculate "Total Value Distributed" using a single optimized query
+        const projectRankings = await db.select({
+            id: registeredRepositories.id,
+            githubRepoFullName: registeredRepositories.githubRepoFullName,
+            totalBounties: sql<number>`count(${multiCurrencyBounties.id})`.as('totalBounties'),
         })
-            .from(multiCurrencyBounties)
-            .groupBy(multiCurrencyBounties.repoId);
+            .from(registeredRepositories)
+            .leftJoin(multiCurrencyBounties, eq(registeredRepositories.githubRepoId, multiCurrencyBounties.repoId))
+            .where(eq(registeredRepositories.isActive, true))
+            .groupBy(registeredRepositories.id, registeredRepositories.githubRepoFullName)
+            .orderBy(desc(sql`totalBounties`))
+            .limit(50);
 
-        // 2. Fetch all registered repos
-        const projects = await db.select().from(registeredRepositories).where(eq(registeredRepositories.isActive, true));
-
-        // 3. Merge and sort in memory (slower but flexible for MVP with mixed currencies)
-        const projectRankings = projects.map(proj => {
-            // Find stats for this repo
-            // Note: multiCurrencyBounties.repoId is text (GitHub Repo ID) usually, but schema says:
-            // repoId: text("repo_id").notNull() in multiCurrencyBounties
-            // githubRepoId: text("github_repo_id").notNull().unique() in registeredRepositories
-
-            const stats = bountyStats.find(s => s.repoId === proj.githubRepoId); // Matching by GitHub Repo ID string
-
+        const formattedProjects = projectRankings.map((p, index) => {
+            // Validate and clean repo name for avatar URL
+            const [owner] = p.githubRepoFullName ? p.githubRepoFullName.split('/') : [];
             return {
-                id: proj.id,
-                githubRepoFullName: proj.githubRepoFullName,
-                totalBounties: stats ? Number(stats.totalBounties) : 0,
-                // For visual flair, we could calculate a "Engagement Score" later
+                rank: index + 1,
+                name: p.githubRepoFullName,
+                bountiesCount: Number(p.totalBounties),
+                avatarUrl: owner ? `https://github.com/${owner}.png` : ''
             };
-        })
-            .sort((a, b) => b.totalBounties - a.totalBounties)
-            .slice(0, 50);
-
-        const formattedProjects = projectRankings.map((p, index) => ({
-            rank: index + 1,
-            name: p.githubRepoFullName,
-            bountiesCount: p.totalBounties,
-            // For images, we can use GitHub avatar of the owner from the full name (owner/repo)
-            avatarUrl: `https://github.com/${p.githubRepoFullName.split('/')[0]}.png`
-        }));
+        });
 
         res.json(formattedProjects);
     } catch (error) {
