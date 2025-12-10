@@ -107,31 +107,5 @@ describe('Leaderboard Service', () => {
                 avatarUrl: 'https://github.com/owner.png',
             });
         });
-
-        it('should handle missing repo name gracefully', async () => {
-            const mockProjects = [
-                {
-                    id: 103,
-                    githubRepoFullName: null,
-                    totalBounties: 0,
-                }
-            ];
-
-            const mockQueryBuilder = {
-                from: vi.fn().mockReturnThis(),
-                leftJoin: vi.fn().mockReturnThis(),
-                where: vi.fn().mockReturnThis(),
-                groupBy: vi.fn().mockReturnThis(),
-                orderBy: vi.fn().mockReturnThis(),
-                limit: vi.fn().mockResolvedValue(mockProjects),
-            };
-
-            vi.mocked(db.select).mockReturnValue(mockQueryBuilder as any);
-
-            // Note: The service implementation checks for `p.githubRepoFullName`
-            // but Typescript might complain if we pass null if it's typed as string.
-            // We will skip this specific null test if the implementation forbids it,
-            // but assuming runtime safety it's good to have.
-        });
     });
 });

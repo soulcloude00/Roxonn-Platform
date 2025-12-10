@@ -210,9 +210,14 @@ export default function LeaderboardPage() {
                                                     </div>
                                                     {/* Mobile View Summary */}
                                                     <div className="text-right sm:hidden">
-                                                        <span className="flex items-center gap-1 font-mono font-bold text-purple-400">
-                                                            <Coins className="w-3 h-3" /> {contributor.roxnEarned} ROXN
-                                                        </span>
+                                                        <div className="flex flex-col gap-1 items-end">
+                                                            <span className="flex items-center gap-1 font-mono font-bold text-purple-400 text-sm">
+                                                                <Coins className="w-3 h-3" /> {contributor.roxnEarned} ROXN
+                                                            </span>
+                                                            <span className="flex items-center gap-1 font-mono font-bold text-green-400 text-sm">
+                                                                <DollarSign className="w-3 h-3" /> {contributor.usdcEarned} USDC
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </CardContent>
