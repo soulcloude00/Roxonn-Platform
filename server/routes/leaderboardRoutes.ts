@@ -15,7 +15,7 @@ const router = Router();
  *       200:
  *         description: List of top contributors
  */
-router.get('/contributors', requireAuth, csrfProtection, async (req: Request, res: Response) => {
+router.get('/contributors', requireAuth, async (req: Request, res: Response) => {
     try {
         const contributors = await getTopContributors();
         res.json(contributors);
@@ -35,7 +35,7 @@ router.get('/contributors', requireAuth, csrfProtection, async (req: Request, re
  *       200:
  *         description: List of top projects
  */
-router.get('/projects', requireAuth, csrfProtection, async (req: Request, res: Response) => {
+router.get('/projects', requireAuth, async (req: Request, res: Response) => {
     try {
         const formattedProjects = await getTopProjects();
         res.json(formattedProjects);

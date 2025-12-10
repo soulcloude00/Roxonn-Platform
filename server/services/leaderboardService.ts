@@ -13,7 +13,7 @@ export interface Contributor {
 
 export interface Project {
     rank: number;
-    name: string | null;
+    name: string;
     bountiesCount: number;
     avatarUrl: string;
 }
@@ -31,13 +31,7 @@ export async function getTopContributors(limit: number = 50): Promise<Contributo
         .orderBy(desc(users.totalRoxnEarned), desc(users.totalUsdcEarned))
         .limit(limit);
 
-    return topContributors.map((c: {
-        id: number;
-        username: string;
-        avatarUrl: string | null;
-        totalRoxnEarned: string | null;
-        totalUsdcEarned: string | null;
-    }, index: number) => ({
+    return topContributors.map((c, index) => ({
         rank: index + 1,
         id: c.id,
         username: c.username,
@@ -60,13 +54,9 @@ export async function getTopProjects(limit: number = 50): Promise<Project[]> {
         .orderBy(desc(sql`totalBounties`))
         .limit(limit);
 
-    return projectRankings.map((p: {
-        id: number;
-        githubRepoFullName: string;
-        totalBounties: number;
-    }, index: number) => {
+    return projectRankings.map((p, index) => {
         // Validate and clean repo name for avatar URL
-        const [owner] = p.githubRepoFullName ? p.githubRepoFullName.split('/') : [];
+        const [owner] = p.githubRepoFullName.split('/');
         return {
             rank: index + 1,
             name: p.githubRepoFullName,
