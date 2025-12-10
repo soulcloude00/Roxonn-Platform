@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { requireAuth, csrfProtection } from '../auth';
+import { requireAuth } from '../auth';
 import { getTopContributors, getTopProjects } from '../services/leaderboardService';
 import { log } from '../utils';
 
@@ -11,6 +11,8 @@ const router = Router();
  *   get:
  *     summary: Get top contributors
  *     tags: [Leaderboard]
+ *     security:
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: List of top contributors
@@ -31,6 +33,8 @@ router.get('/contributors', requireAuth, async (req: Request, res: Response) => 
  *   get:
  *     summary: Get top projects
  *     tags: [Leaderboard]
+ *     security:
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: List of top projects

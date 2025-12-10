@@ -5,7 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Medal, Rocket, Users, FolderKanban, Loader2, DollarSign, Coins, AlertCircle } from "lucide-react";
+import { Trophy, Medal, Rocket, Users, FolderKanban, Loader2, DollarSign, Coins, AlertCircle, Calendar } from "lucide-react";
+import csrfService from "@/lib/csrf";
+import { STAGING_API_URL } from "@/config";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Types for Leaderboard Data
 interface Contributor {
@@ -46,7 +49,14 @@ export default function LeaderboardPage() {
     const { data: contributors, isLoading: isLoadingContributors, error: contributorsError } = useQuery<Contributor[]>({
         queryKey: ["leaderboard", "contributors"],
         queryFn: async () => {
-            const res = await fetch("/api/leaderboard/contributors");
+            const csrfToken = await csrfService.getToken();
+            const res = await fetch(`${STAGING_API_URL}/api/leaderboard/contributors`, {
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                }
+            });
             if (!res.ok) throw new Error("Failed to fetch contributors");
             return res.json();
         },
@@ -56,7 +66,14 @@ export default function LeaderboardPage() {
     const { data: projects, isLoading: isLoadingProjects, error: projectsError } = useQuery<Project[]>({
         queryKey: ["leaderboard", "projects"],
         queryFn: async () => {
-            const res = await fetch("/api/leaderboard/projects");
+            const csrfToken = await csrfService.getToken();
+            const res = await fetch(`${STAGING_API_URL}/api/leaderboard/projects`, {
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                }
+            });
             if (!res.ok) throw new Error("Failed to fetch projects");
             return res.json();
         },
@@ -104,6 +121,20 @@ export default function LeaderboardPage() {
                         Discover the top contributors shaping the future of Roxonn and the most active projects driving innovation.
                     </p>
                 </motion.div>
+
+                {/* Time Filter - MVP Requirement */}
+                <div className="flex justify-end">
+                    <Select defaultValue="all-time">
+                        <SelectTrigger className="w-[180px]">
+                            <Calendar className="w-4 h-4 mr-2" />
+                            <SelectValue placeholder="Select period" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all-time">All Time</SelectItem>
+                            <SelectItem value="last-30-days" disabled>Last 30 Days (Coming Soon)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
 
                 {/* Tabs Section */}
                 <Tabs defaultValue="contributors" className="w-full" onValueChange={setActiveTab}>

@@ -13,6 +13,7 @@ export interface Contributor {
 
 export interface Project {
     rank: number;
+    id: number;
     name: string;
     bountiesCount: number;
     avatarUrl: string;
@@ -59,6 +60,7 @@ export async function getTopProjects(limit: number = 50): Promise<Project[]> {
         const [owner] = p.githubRepoFullName.split('/');
         return {
             rank: index + 1,
+            id: p.id,
             name: p.githubRepoFullName,
             bountiesCount: Number(p.totalBounties),
             avatarUrl: owner ? `https://github.com/${owner}.png` : ''
