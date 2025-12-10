@@ -40,8 +40,8 @@ router.get('/contributors', async (req, res) => {
             id: c.id,
             username: c.username,
             avatarUrl: c.avatarUrl,
-            roxnEarned: parseFloat(c.totalRoxnEarned?.toString() || '0').toFixed(2),
-            usdcEarned: parseFloat(c.totalUsdcEarned?.toString() || '0').toFixed(2),
+            roxnEarned: parseFloat(c.totalRoxnEarned || '0').toFixed(2),
+            usdcEarned: parseFloat(c.totalUsdcEarned || '0').toFixed(2),
         }));
 
         res.json(formattedContributors);
