@@ -1046,7 +1046,7 @@ export async function handleIssueClosed(payload: WebhookPayload, installationId:
       if (event.event === 'cross-referenced' && event.actor?.login && event.source?.type === 'issue') {
         log(`[Timeline Event ${i}] Found potential cross-reference by Actor ${event.actor.login}. Checking source...`, 'webhook-issue');
         const sourceIssue = event.source.issue; // This object represents the PR
-        log(`[Timeline Event ${i}] Source Issue Object: ${JSON.stringify(sourceIssue)}`, 'webhook-issue');
+        log(`[Timeline Event ${i}] Source Issue: #${sourceIssue?.number}, state=${sourceIssue?.state}, user=${sourceIssue?.user?.login}`, 'webhook-issue');
 
         // Verify the source PR is closed and has a merged indicator
         // GitHub API might represent the merged state in different ways, check common patterns:
@@ -1075,7 +1075,15 @@ export async function handleIssueClosed(payload: WebhookPayload, installationId:
       }
       // Keep the old 'closed' event check as a fallback, though less likely to work based on logs
       else if (event.event === 'closed' && event.source?.issue?.pull_request?.merged === true) {
-        closingPRAuthor = event.source.issue.user?.login;
+        const fallbackAuthor = event.source.issue.user?.login;
+
+        // Skip bot accounts - consistent with main logic
+        if (!fallbackAuthor || fallbackAuthor.endsWith('[bot]')) {
+          log(`[Timeline Event ${i}] Skipping bot or missing author in fallback: ${fallbackAuthor}`, 'webhook-issue');
+          continue;
+        }
+
+        closingPRAuthor = fallbackAuthor;
         log(`Found contributor '${closingPRAuthor}' via direct closed event source (Fallback).`, 'webhook-issue');
         break;
       }
