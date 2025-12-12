@@ -134,6 +134,7 @@ Routes are organized in `server/routes/` with each file handling a specific doma
   referralRoutes.ts     - /api/referral/* - Referral system
   promotionalBounties.ts- /api/promotional/* - Promotional bounties
   multiCurrencyWallet.ts- /api/wallet/* - Multi-currency features
+  leaderboardRoutes.ts  - /api/leaderboard/* - Leaderboard endpoints
   aiScopingAgent.ts     - /api/ai-scoping/* - AI scoping agent
 ```
 
