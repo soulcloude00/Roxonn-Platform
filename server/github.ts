@@ -1053,8 +1053,8 @@ export async function handleIssueClosed(payload: WebhookPayload, installationId:
         // 1. sourceIssue.state === 'closed'
         // 2. sourceIssue.pull_request object exists and sourceIssue.pull_request.merged === true
         // 3. sourceIssue.state_reason === 'completed' (less reliable for PRs)
-        const isMerged = sourceIssue?.state === 'closed' &&
-          sourceIssue?.pull_request?.merged_at !== null;
+        const mergedAt = sourceIssue?.pull_request?.merged_at;
+        const isMerged = sourceIssue?.state === 'closed' && mergedAt != null;
 
         if (isMerged) {
           // Use PR author from source, not event actor (which could be a bot commenting)
