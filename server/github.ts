@@ -179,57 +179,57 @@ export function buildSafeGitHubUrl(path: string, params: Record<string, string>)
 
 // Export the helper
 export function getGitHubApiHeaders(token: string): Record<string, string> {
-    return {
-        'Accept': 'application/vnd.github+json',
-        'Authorization': `Bearer ${token}`,
-        'X-GitHub-Api-Version': '2022-11-28',
-    };
+  return {
+    'Accept': 'application/vnd.github+json',
+    'Authorization': `Bearer ${token}`,
+    'X-GitHub-Api-Version': '2022-11-28',
+  };
 }
 
 // Gets headers using the logged-in user's token from the request
 function getGitHubApiHeadersForUser(req: Request): Record<string, string> {
-    // Add error handling if token is missing
-    if (!req.user?.githubAccessToken) {
-        log('Error: Missing user GitHub token for API header.', 'github');
-        // Return minimal headers, API call will likely fail (or throw error?)
-        return { 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }; 
-    }
-    return getGitHubApiHeaders(req.user.githubAccessToken);
+  // Add error handling if token is missing
+  if (!req.user?.githubAccessToken) {
+    log('Error: Missing user GitHub token for API header.', 'github');
+    // Return minimal headers, API call will likely fail (or throw error?)
+    return { 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
+  }
+  return getGitHubApiHeaders(req.user.githubAccessToken);
 }
 
 // Gets headers using the server's PAT (use sparingly)
 function getGitHubApiHeadersForServerPAT(): Record<string, string> {
-    const githubPat = process.env.GITHUB_PAT || config.githubPat;
-    if (!githubPat) {
-        log('Error: Missing GitHub PAT for server-side API call.', 'github');
-        return { 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }; 
-    }
-     return {
-        'Accept': 'application/vnd.github+json',
-        'Authorization': `token ${githubPat}`,
-        'X-GitHub-Api-Version': '2022-11-28',
-    }; 
+  const githubPat = process.env.GITHUB_PAT || config.githubPat;
+  if (!githubPat) {
+    log('Error: Missing GitHub PAT for server-side API call.', 'github');
+    return { 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
+  }
+  return {
+    'Accept': 'application/vnd.github+json',
+    'Authorization': `token ${githubPat}`,
+    'X-GitHub-Api-Version': '2022-11-28',
+  };
 }
 
 // Export the helper
 export async function getInstallationAccessToken(installationId: string): Promise<string | null> {
-    if (!config.githubAppId || !config.githubAppPrivateKey || !installationId) {
-        log('Error: Missing GitHub App credentials or Installation ID for token generation.', 'github-auth');
-        return null;
-    }
-    try {
-        const auth = createAppAuth({
-            appId: config.githubAppId,
-            privateKey: config.githubAppPrivateKey,
-            installationId: installationId,
-        });
-        const installationAuthentication = await auth({ type: "installation" });
-        log(`Generated installation token for installation ID: ${installationId}`, 'github-auth');
-        return installationAuthentication.token;
-    } catch (error: any) {
-        log(`Error generating installation token for ID ${installationId}: ${error.message}`, 'github-auth');
-        return null;
-    }
+  if (!config.githubAppId || !config.githubAppPrivateKey || !installationId) {
+    log('Error: Missing GitHub App credentials or Installation ID for token generation.', 'github-auth');
+    return null;
+  }
+  try {
+    const auth = createAppAuth({
+      appId: config.githubAppId,
+      privateKey: config.githubAppPrivateKey,
+      installationId: installationId,
+    });
+    const installationAuthentication = await auth({ type: "installation" });
+    log(`Generated installation token for installation ID: ${installationId}`, 'github-auth');
+    return installationAuthentication.token;
+  } catch (error: any) {
+    log(`Error generating installation token for ID ${installationId}: ${error.message}`, 'github-auth');
+    return null;
+  }
 }
 
 export async function getOrgRepos(req: Request, res: Response) {
@@ -439,16 +439,16 @@ async function verifySignature(req: Request): Promise<boolean> {
 // Updated helper to extract multiple issue numbers and avoid Set iteration
 function extractIssueNumbers(prBody: string): number[] {
   if (!prBody) return [];
-  const regex = /(?:fixes|closes|resolves)\s+#(\d+)/gi; 
+  const regex = /(?:fixes|closes|resolves)\s+#(\d+)/gi;
   const issueNumbersMap: { [key: number]: boolean } = {}; // Use map to handle uniqueness
   let match;
   while ((match = regex.exec(prBody)) !== null) {
-      if (match[1]) {
-          const num = parseInt(match[1]);
-          if (!isNaN(num)) {
-              issueNumbersMap[num] = true;
-          }
+    if (match[1]) {
+      const num = parseInt(match[1]);
+      if (!isNaN(num)) {
+        issueNumbersMap[num] = true;
       }
+    }
   }
   // Convert map keys back to numbers
   return Object.keys(issueNumbersMap).map(Number);
@@ -509,22 +509,22 @@ export async function handlePullRequestMerged(payload: WebhookPayload, installat
   // Process each linked issue number
   for (const issueNumber of issueNumbers) {
     log(`Checking bounty for issue #${issueNumber} linked to PR #${pr.number}`, 'webhook');
-    
+
     let githubIssueId: number | null = null;
     try {
       // Fetch issue details USING INSTALLATION TOKEN
       const issueDetailsResponse = await axios.get(
-         `${GITHUB_API_BASE}/repos/${repoFullName}/issues/${issueNumber}`,
-         { headers: installationApiHeaders } // Use installation token headers
-       );
-       githubIssueId = issueDetailsResponse.data?.id; 
-       if (!githubIssueId) {
-           log(`Could not retrieve GitHub ID for issue #${issueNumber} from API response.`, 'webhook');
-           continue;
-       }
+        `${GITHUB_API_BASE}/repos/${repoFullName}/issues/${issueNumber}`,
+        { headers: installationApiHeaders } // Use installation token headers
+      );
+      githubIssueId = issueDetailsResponse.data?.id;
+      if (!githubIssueId) {
+        log(`Could not retrieve GitHub ID for issue #${issueNumber} from API response.`, 'webhook');
+        continue;
+      }
     } catch (issueFetchError: any) {
-        log(`Failed to fetch details for issue #${issueNumber} in repo ${repoFullName}: ${issueFetchError.message}`, 'webhook');
-        continue; // Skip to next issue number if fetch fails
+      log(`Failed to fetch details for issue #${issueNumber} in repo ${repoFullName}: ${issueFetchError.message}`, 'webhook');
+      continue; // Skip to next issue number if fetch fails
     }
 
     log(`GitHub Issue ID for #${issueNumber} is ${githubIssueId}`, 'webhook');
@@ -542,11 +542,11 @@ export async function handlePullRequestMerged(payload: WebhookPayload, installat
       // Determine currency type and amount (check USDC first, then ROXN, then XDC)
       let amountStr: string | null = null;
       let currency: string;
-      
+
       const usdcAmount = parseFloat(issueBounty.usdcAmount || "0");
       const roxnAmount = parseFloat(issueBounty.roxnAmount || "0");
       const xdcAmount = parseFloat(issueBounty.xdcAmount || "0");
-      
+
       if (usdcAmount > 0) {
         amountStr = issueBounty.usdcAmount ?? null;
         currency = "USDC";
@@ -603,7 +603,7 @@ export async function verifyRepoExists(owner: string, repo: string): Promise<boo
       buildSafeGitHubUrl('/repos/{owner}/{repo}', { owner, repo }),
       { headers: getGitHubApiHeadersForServerPAT() }
     );
-    
+
     return response.status === 200;
   } catch (error) {
     log(`Error verifying repository: ${error}`, 'github');
@@ -634,7 +634,7 @@ export async function verifyUserIsRepoAdmin(token: string, owner: string, repo: 
       buildSafeGitHubUrl('/repos/{owner}/{repo}', { owner, repo }),
       { headers: getGitHubApiHeaders(token) }
     );
-    
+
     // Check if the response includes the permissions object and admin is true
     if (response.status === 200 && response.data?.permissions?.admin === true) {
       log(`Admin permission confirmed for user on ${owner}/${repo}.`, 'github');
@@ -852,57 +852,57 @@ export async function getUserAdminRepos(req: Request, res: Response) {
 
     // 1. Fetch direct/collaborator repos
     try {
-        log('Fetching direct/collaborator repos...', 'github');
-        const directReposResponse = await axios.get<any[]>(
-            `${GITHUB_API_BASE}/user/repos`,
-            {
-                params: { affiliation: 'owner,collaborator', per_page: 100 },
-                headers: apiHeaders
-            }
-        );
-        allAdminRepos = allAdminRepos.concat(directReposResponse.data.filter(repo => repo.permissions?.admin === true));
-        log(`Found ${allAdminRepos.length} direct/collaborator admin repos.`, 'github');
+      log('Fetching direct/collaborator repos...', 'github');
+      const directReposResponse = await axios.get<any[]>(
+        `${GITHUB_API_BASE}/user/repos`,
+        {
+          params: { affiliation: 'owner,collaborator', per_page: 100 },
+          headers: apiHeaders
+        }
+      );
+      allAdminRepos = allAdminRepos.concat(directReposResponse.data.filter(repo => repo.permissions?.admin === true));
+      log(`Found ${allAdminRepos.length} direct/collaborator admin repos.`, 'github');
     } catch (err: any) {
-        log(`Error fetching direct repos: ${err.message}`, 'github');
-        // Decide if this error is critical or if we should continue to orgs
-        // For now, let's log and continue
+      log(`Error fetching direct repos: ${err.message}`, 'github');
+      // Decide if this error is critical or if we should continue to orgs
+      // For now, let's log and continue
     }
 
     // 2. Fetch user's organizations
     let userOrgs: { login: string }[] = [];
     try {
-        log('Fetching user organizations...', 'github');
-        const orgsResponse = await axios.get< { login: string }[] >(
-            `${GITHUB_API_BASE}/user/orgs`,
-            { headers: apiHeaders }
-        );
-        userOrgs = orgsResponse.data;
-        log(`User is member of ${userOrgs.length} organizations.`, 'github');
+      log('Fetching user organizations...', 'github');
+      const orgsResponse = await axios.get<{ login: string }[]>(
+        `${GITHUB_API_BASE}/user/orgs`,
+        { headers: apiHeaders }
+      );
+      userOrgs = orgsResponse.data;
+      log(`User is member of ${userOrgs.length} organizations.`, 'github');
     } catch (err: any) {
-        log(`Error fetching user orgs: ${err.message}`, 'github');
-        // Cannot fetch org repos if this fails
-        // return res.status(500).json({ error: 'Failed to fetch user organizations' }); 
+      log(`Error fetching user orgs: ${err.message}`, 'github');
+      // Cannot fetch org repos if this fails
+      // return res.status(500).json({ error: 'Failed to fetch user organizations' }); 
     }
 
     // 3. Fetch repos for each organization and filter for admin
     for (const org of userOrgs) {
-        try {
-            log(`Fetching repos for organization: ${org.login}...`, 'github');
-            // Note: GitHub might require specific permissions/scopes to list org repos via user token
-            const orgReposResponse = await axios.get<any[]>(
-                `${GITHUB_API_BASE}/orgs/${org.login}/repos`,
-                {
-                    params: { type: 'member', per_page: 100 }, // Get repos user is member of within org
-                    headers: apiHeaders
-                }
-            );
-            const orgAdminRepos = orgReposResponse.data.filter(repo => repo.permissions?.admin === true);
-            allAdminRepos = allAdminRepos.concat(orgAdminRepos);
-            log(`Found ${orgAdminRepos.length} admin repos in ${org.login}. Total admin repos now: ${allAdminRepos.length}`, 'github');
-        } catch (err: any) {
-            log(`Error fetching repos for org ${org.login}: ${err.message}`, 'github');
-            // Continue to next org even if one fails
-        }
+      try {
+        log(`Fetching repos for organization: ${org.login}...`, 'github');
+        // Note: GitHub might require specific permissions/scopes to list org repos via user token
+        const orgReposResponse = await axios.get<any[]>(
+          `${GITHUB_API_BASE}/orgs/${org.login}/repos`,
+          {
+            params: { type: 'member', per_page: 100 }, // Get repos user is member of within org
+            headers: apiHeaders
+          }
+        );
+        const orgAdminRepos = orgReposResponse.data.filter(repo => repo.permissions?.admin === true);
+        allAdminRepos = allAdminRepos.concat(orgAdminRepos);
+        log(`Found ${orgAdminRepos.length} admin repos in ${org.login}. Total admin repos now: ${allAdminRepos.length}`, 'github');
+      } catch (err: any) {
+        log(`Error fetching repos for org ${org.login}: ${err.message}`, 'github');
+        // Continue to next org even if one fails
+      }
     }
 
     // 4. De-duplicate results (based on repo ID)
@@ -931,9 +931,9 @@ export async function getUserAdminRepos(req: Request, res: Response) {
     // Catch any unexpected errors during the overall process
     log(`Error in getUserAdminRepos main block: ${error.message}`, 'github');
     if (!res.headersSent) {
-        res.status(500).json({
-          error: 'Failed to fetch user repositories due to an unexpected error.'
-        });
+      res.status(500).json({
+        error: 'Failed to fetch user repositories due to an unexpected error.'
+      });
     }
   }
 }
@@ -970,180 +970,189 @@ export async function handleIssueClosed(payload: WebhookPayload, installationId:
   log(`Webhook: Checking registration for repo ID ${repoId}`, 'webhook-issue');
   const registration = await storage.findRegisteredRepositoryByGithubId(String(repoId));
   if (!registration) {
-      log(`Ignoring Issue Closed: Repository ${repoFullName} (ID: ${repoId}) is not registered.`, 'webhook-issue');
-      return;
+    log(`Ignoring Issue Closed: Repository ${repoFullName} (ID: ${repoId}) is not registered.`, 'webhook-issue');
+    return;
   }
   log(`Repository ${repoFullName} is registered. Proceeding.`, 'webhook-issue');
 
   // 3. Check Bounty on Blockchain
   let issueBounty: IssueBountyDetails | null = null;
   try {
-      // USE REPOSITORY-SPECIFIC issueNumber FOR BLOCKCHAIN CALLS
-      const issueBountyDetailsArray = await blockchain.getIssueRewards(repoId, [issueNumber]);
-      if (!issueBountyDetailsArray || issueBountyDetailsArray.length === 0) {
-        log(`No bounty details found on-chain for issue #${issueNumber}.`, 'webhook-issue');
-        return;
-      }
-      issueBounty = issueBountyDetailsArray[0];
-      
-      // Determine currency type and amount (check USDC first, then ROXN, then XDC)
-      let amountStr: string | null = null;
-      let currency: string;
-      
-      const usdcAmount = parseFloat(issueBounty.usdcAmount || "0");
-      const roxnAmount = parseFloat(issueBounty.roxnAmount || "0");
-      const xdcAmount = parseFloat(issueBounty.xdcAmount || "0");
-      
-      if (usdcAmount > 0) {
-        amountStr = issueBounty.usdcAmount ?? null;
-        currency = "USDC";
-      } else if (issueBounty.isRoxn || roxnAmount > 0) {
-        amountStr = issueBounty.roxnAmount ?? null;
-        currency = "ROXN";
-      } else if (xdcAmount > 0) {
-        amountStr = issueBounty.xdcAmount ?? null;
-        currency = "XDC";
-      } else {
-        log(`No bounty amount found for issue #${issueNumber}.`, 'webhook-issue');
-        return;
-      }
-      
-      log(`Found bounty ${amountStr} ${currency} for issue #${issueNumber}.`, 'webhook-issue');
+    // USE REPOSITORY-SPECIFIC issueNumber FOR BLOCKCHAIN CALLS
+    const issueBountyDetailsArray = await blockchain.getIssueRewards(repoId, [issueNumber]);
+    if (!issueBountyDetailsArray || issueBountyDetailsArray.length === 0) {
+      log(`No bounty details found on-chain for issue #${issueNumber}.`, 'webhook-issue');
+      return;
+    }
+    issueBounty = issueBountyDetailsArray[0];
+
+    // Determine currency type and amount (check USDC first, then ROXN, then XDC)
+    let amountStr: string | null = null;
+    let currency: string;
+
+    const usdcAmount = parseFloat(issueBounty.usdcAmount || "0");
+    const roxnAmount = parseFloat(issueBounty.roxnAmount || "0");
+    const xdcAmount = parseFloat(issueBounty.xdcAmount || "0");
+
+    if (usdcAmount > 0) {
+      amountStr = issueBounty.usdcAmount ?? null;
+      currency = "USDC";
+    } else if (issueBounty.isRoxn || roxnAmount > 0) {
+      amountStr = issueBounty.roxnAmount ?? null;
+      currency = "ROXN";
+    } else if (xdcAmount > 0) {
+      amountStr = issueBounty.xdcAmount ?? null;
+      currency = "XDC";
+    } else {
+      log(`No bounty amount found for issue #${issueNumber}.`, 'webhook-issue');
+      return;
+    }
+
+    log(`Found bounty ${amountStr} ${currency} for issue #${issueNumber}.`, 'webhook-issue');
   } catch (bcError: any) {
-      log(`Error checking bounty for issue #${issueNumber}: ${bcError.message}`, 'webhook-issue');
-      return; // Don't proceed if we can't check the bounty
+    log(`Error checking bounty for issue #${issueNumber}: ${bcError.message}`, 'webhook-issue');
+    return; // Don't proceed if we can't check the bounty
   }
 
   // 4. Find Closing Merged PR via Timeline API
   let closingPRAuthor: string | null = null;
   try {
-      // --- Generate Installation Token --- 
-      const installationToken = await getInstallationAccessToken(installationId);
-      if (!installationToken) {
-          log(`Webhook Error: Could not get installation token for installId ${installationId}. Cannot fetch timeline.`, 'webhook-issue');
-          return; // Cannot proceed without token
+    // --- Generate Installation Token --- 
+    const installationToken = await getInstallationAccessToken(installationId);
+    if (!installationToken) {
+      log(`Webhook Error: Could not get installation token for installId ${installationId}. Cannot fetch timeline.`, 'webhook-issue');
+      return; // Cannot proceed without token
+    }
+    const installationApiHeaders = getGitHubApiHeaders(installationToken);
+    // --- Use Installation Token for API Call (using validated webhook owner/repo) ---
+    const timelineUrl = buildSafeGitHubUrl('/repos/{owner}/{repo}/issues/{issueNumber}/timeline', {
+      owner: webhookOwner,
+      repo: webhookRepo,
+      issueNumber: String(issueNumber)
+    });
+    log(`Fetching timeline: ${timelineUrl}`, 'webhook-issue');
+    const timelineResponse = await axios.get(timelineUrl, {
+      headers: installationApiHeaders, // Use token!
+      params: { per_page: 100 } // Fetch more events to avoid missing cross-references
+    });
+    // Iterate backwards through timeline events to find the most recent closing event by a merged PR
+    const timelineEvents = timelineResponse.data || [];
+    log(`Timeline received ${timelineEvents.length} events. Iterating backwards...`, 'webhook-issue');
+    for (let i = timelineEvents.length - 1; i >= 0; i--) {
+      const event = timelineEvents[i];
+      log(`[Timeline Event ${i}] ID: ${event.id}, Event: ${event.event}, Actor: ${event.actor?.login}, Commit: ${event.commit_id || 'N/A'}, Source Type: ${event.source?.type || 'N/A'}, Source Issue State: ${event.source?.issue?.state || 'N/A'}`, 'webhook-issue'); // Log more source details
+
+      // Check if this is a cross-reference event triggered by the contributor's PR
+      if (event.event === 'cross-referenced' && event.actor?.login && event.source?.type === 'issue') {
+        log(`[Timeline Event ${i}] Found potential cross-reference by Actor ${event.actor.login}. Checking source...`, 'webhook-issue');
+        const sourceIssue = event.source.issue; // This object represents the PR
+        log(`[Timeline Event ${i}] Source Issue Object: ${JSON.stringify(sourceIssue)}`, 'webhook-issue');
+
+        // Verify the source PR is closed and has a merged indicator
+        // GitHub API might represent the merged state in different ways, check common patterns:
+        // 1. sourceIssue.state === 'closed'
+        // 2. sourceIssue.pull_request object exists and sourceIssue.pull_request.merged === true
+        // 3. sourceIssue.state_reason === 'completed' (less reliable for PRs)
+        const isMerged = sourceIssue?.state === 'closed' &&
+          sourceIssue?.pull_request?.merged_at !== null;
+
+        if (isMerged) {
+          // Use PR author from source, not event actor (which could be a bot commenting)
+          const prAuthor = sourceIssue?.user?.login;
+
+          // Skip bot accounts (they end with [bot])
+          if (!prAuthor || prAuthor.endsWith('[bot]')) {
+            log(`[Timeline Event ${i}] Skipping bot or missing PR author: ${prAuthor}`, 'webhook-issue');
+            continue;
+          }
+
+          closingPRAuthor = prAuthor;
+          log(`Found contributor '${closingPRAuthor}' (PR author) via merged cross-referenced PR event.`, 'webhook-issue');
+          break; // Stop searching, we found the contributor
+        } else {
+          log(`[Timeline Event ${i}] Cross-referenced source PR not marked as merged. State: ${sourceIssue?.state}, Merged At: ${sourceIssue?.pull_request?.merged_at}`, 'webhook-issue'); // Log merged_at
+        }
       }
-      const installationApiHeaders = getGitHubApiHeaders(installationToken);
-      // --- Use Installation Token for API Call (using validated webhook owner/repo) ---
-      const timelineUrl = buildSafeGitHubUrl('/repos/{owner}/{repo}/issues/{issueNumber}/timeline', {
-        owner: webhookOwner,
-        repo: webhookRepo,
-        issueNumber: String(issueNumber)
-      });
-      log(`Fetching timeline: ${timelineUrl}`, 'webhook-issue');
-      const timelineResponse = await axios.get(timelineUrl, {
-          headers: installationApiHeaders, // Use token!
-          params: { per_page: 100 } // Fetch more events to avoid missing cross-references
-       });
-       // Iterate backwards through timeline events to find the most recent closing event by a merged PR
-       const timelineEvents = timelineResponse.data || [];
-       log(`Timeline received ${timelineEvents.length} events. Iterating backwards...`, 'webhook-issue');
-       for (let i = timelineEvents.length - 1; i >= 0; i--) {
-           const event = timelineEvents[i];
-           log(`[Timeline Event ${i}] ID: ${event.id}, Event: ${event.event}, Actor: ${event.actor?.login}, Commit: ${event.commit_id || 'N/A'}, Source Type: ${event.source?.type || 'N/A'}, Source Issue State: ${event.source?.issue?.state || 'N/A'}`, 'webhook-issue'); // Log more source details
+      // Keep the old 'closed' event check as a fallback, though less likely to work based on logs
+      else if (event.event === 'closed' && event.source?.issue?.pull_request?.merged === true) {
+        closingPRAuthor = event.source.issue.user?.login;
+        log(`Found contributor '${closingPRAuthor}' via direct closed event source (Fallback).`, 'webhook-issue');
+        break;
+      }
+    }
 
-           // Check if this is a cross-reference event triggered by the contributor's PR
-           if (event.event === 'cross-referenced' && event.actor?.login && event.source?.type === 'issue') {
-               log(`[Timeline Event ${i}] Found potential cross-reference by Actor ${event.actor.login}. Checking source...`, 'webhook-issue');
-               const sourceIssue = event.source.issue; // This object represents the PR
-               log(`[Timeline Event ${i}] Source Issue Object: ${JSON.stringify(sourceIssue)}`, 'webhook-issue');
-
-               // Verify the source PR is closed and has a merged indicator
-               // GitHub API might represent the merged state in different ways, check common patterns:
-               // 1. sourceIssue.state === 'closed'
-               // 2. sourceIssue.pull_request object exists and sourceIssue.pull_request.merged === true
-               // 3. sourceIssue.state_reason === 'completed' (less reliable for PRs)
-               const isMerged = sourceIssue?.state === 'closed' && 
-                                sourceIssue?.pull_request?.merged_at !== null;
-
-               if (isMerged) {
-                   closingPRAuthor = event.actor.login; // The actor of the cross-reference IS the contributor
-                   log(`Found contributor '${closingPRAuthor}' via merged cross-referenced PR event.`, 'webhook-issue');
-                   break; // Stop searching, we found the contributor
-               } else {
-                   log(`[Timeline Event ${i}] Cross-referenced source PR not marked as merged. State: ${sourceIssue?.state}, Merged At: ${sourceIssue?.pull_request?.merged_at}`, 'webhook-issue'); // Log merged_at
-               }
-           } 
-           // Keep the old 'closed' event check as a fallback, though less likely to work based on logs
-           else if (event.event === 'closed' && event.source?.issue?.pull_request?.merged === true) {
-               closingPRAuthor = event.source.issue.user?.login; 
-               log(`Found contributor '${closingPRAuthor}' via direct closed event source (Fallback).`, 'webhook-issue');
-               break; 
-           }
-       }
-
-       if (!closingPRAuthor) {
-           log(`Could not find a merged PR closing event in timeline for issue #${issueNumber}. Cannot determine contributor.`, 'webhook-issue');
-           return;
-       }
+    if (!closingPRAuthor) {
+      log(`Could not find a merged PR closing event in timeline for issue #${issueNumber}. Cannot determine contributor.`, 'webhook-issue');
+      return;
+    }
 
   } catch (timelineError: any) {
-      log(`Error fetching timeline for issue #${issueNumber}: ${timelineError.message}`, 'webhook-issue');
-      return;
+    log(`Error fetching timeline for issue #${issueNumber}: ${timelineError.message}`, 'webhook-issue');
+    return;
   }
-  
+
   // 5. Get Contributor Details from DB
   log(`Looking up contributor: ${closingPRAuthor}`, 'webhook-issue');
   const contributor = await storage.getUserByGithubUsername(closingPRAuthor);
   if (!contributor || !contributor.xdcWalletAddress) {
-      log(`Contributor ${closingPRAuthor} (PR author) not registered or has no wallet. Skipping distribution for issue #${issueNumber}.`, 'webhook-issue');
-      return;
+    log(`Contributor ${closingPRAuthor} (PR author) not registered or has no wallet. Skipping distribution for issue #${issueNumber}.`, 'webhook-issue');
+    return;
   }
   log(`Found contributor wallet: ${contributor.xdcWalletAddress}`, 'webhook-issue');
 
   // 6. Get Pool Manager for Distribution Authorization
   const poolManager = await storage.getRepositoryPoolManager(repoId);
   if (!poolManager) {
-      log(`No pool manager found for repository ${repoId}. Cannot distribute reward for issue #${issueNumber}.`, 'webhook-issue');
-      return;
+    log(`No pool manager found for repository ${repoId}. Cannot distribute reward for issue #${issueNumber}.`, 'webhook-issue');
+    return;
   }
   log(`Found pool manager: ${poolManager.id} (${poolManager.username})`, 'webhook-issue');
 
   // 7. Distribute Reward
   try {
-      log(`Attempting distribution for issue #${issueNumber} to ${contributor.xdcWalletAddress}`, 'webhook-issue');
-      // USE REPOSITORY-SPECIFIC issueNumber FOR BLOCKCHAIN CALLS
-      const result = await blockchain.distributeReward(
-          repoId,
-          issueNumber, 
-          contributor.xdcWalletAddress,
-          poolManager.id 
-      );
-      log(`Distribution successful for issue #${issueNumber}. TX: ${result?.hash || 'N/A'}`, 'webhook-issue');
+    log(`Attempting distribution for issue #${issueNumber} to ${contributor.xdcWalletAddress}`, 'webhook-issue');
+    // USE REPOSITORY-SPECIFIC issueNumber FOR BLOCKCHAIN CALLS
+    const result = await blockchain.distributeReward(
+      repoId,
+      issueNumber,
+      contributor.xdcWalletAddress,
+      poolManager.id
+    );
+    log(`Distribution successful for issue #${issueNumber}. TX: ${result?.hash || 'N/A'}`, 'webhook-issue');
   } catch (distributionError: any) {
-      log(`Error distributing reward for issue #${issueNumber}: ${distributionError.message}`, 'webhook-issue');
+    log(`Error distributing reward for issue #${issueNumber}: ${distributionError.message}`, 'webhook-issue');
   }
 }
 
 // Function to find a GitHub app installation by app name/slug
 export async function findAppInstallationByName(
-  installations: any[], 
+  installations: any[],
   appName: string = "roxonn-futuretech"
 ): Promise<any | null> {
   // Normalize app name for case-insensitive matching
   const normalizedAppName = appName.toLowerCase();
-  
+
   // First try to find an exact match on app_slug
-  const exactMatch = installations.find(installation => 
+  const exactMatch = installations.find(installation =>
     installation.app_slug?.toLowerCase() === normalizedAppName
   );
-  
+
   if (exactMatch) {
     log(`Found exact match for app ${appName} with installation ID ${exactMatch.id}`, 'github-app');
     return exactMatch;
   }
-  
+
   // Then try a contains match on app_slug or app_name
-  const containsMatch = installations.find(installation => 
+  const containsMatch = installations.find(installation =>
     (installation.app_slug && installation.app_slug.toLowerCase().includes(normalizedAppName)) ||
     (installation.app_name && installation.app_name.toLowerCase().includes(normalizedAppName))
   );
-  
+
   if (containsMatch) {
     log(`Found partial match for app ${appName} with installation ID ${containsMatch.id}`, 'github-app');
     return containsMatch;
   }
-  
+
   // If we get here, no match was found
   log(`No installation found matching ${appName}`, 'github-app');
   return null;
@@ -1182,7 +1191,7 @@ export function parseBountyCommand(comment: string): BountyCommand | null {
     if (match) {
       const amount = match[1];
       const currency = match[2]?.toUpperCase() as 'XDC' | 'ROXN' | 'USDC' | undefined;
-      
+
       if (amount && currency) {
         // Validate currency
         if (!['XDC', 'ROXN', 'USDC'].includes(currency)) {
@@ -1330,15 +1339,15 @@ Only pool managers can allocate bounties. You can request a bounty by commenting
     // Check pool balance
     try {
       const repoDetails = await blockchain.getRepository(blockchainRepoId);
-      const poolBalanceStr = command.currency === 'XDC' 
-        ? repoDetails.xdcPoolRewards 
+      const poolBalanceStr = command.currency === 'XDC'
+        ? repoDetails.xdcPoolRewards
         : command.currency === 'ROXN'
-        ? repoDetails.roxnPoolRewards
-        : repoDetails.usdcPoolRewards;
+          ? repoDetails.roxnPoolRewards
+          : repoDetails.usdcPoolRewards;
 
       const poolBalance = ethers.parseUnits(poolBalanceStr, command.currency === 'USDC' ? 6 : 18);
       const amountWei = ethers.parseUnits(command.amount, command.currency === 'USDC' ? 6 : 18);
-      
+
       if (poolBalance < amountWei) {
         const errorMsg = `❌ **Insufficient Funds**
 
@@ -1407,7 +1416,7 @@ Please try again or contact support.
       suggestedCurrency: command.currency || null,
     });
 
-    const amountText = command.amount && command.currency 
+    const amountText = command.amount && command.currency
       ? `**Suggested amount:** ${command.amount} ${command.currency}`
       : 'No amount suggested';
 
