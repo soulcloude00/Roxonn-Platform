@@ -1031,13 +1031,37 @@ export async function handleIssueClosed(payload: WebhookPayload, installationId:
       issueNumber: String(issueNumber)
     });
     log(`Fetching timeline: ${timelineUrl}`, 'webhook-issue');
-    const timelineResponse = await axios.get(timelineUrl, {
-      headers: installationApiHeaders, // Use token!
-      params: { per_page: 100 } // Fetch more events to avoid missing cross-references
-    });
-    // Iterate backwards through timeline events to find the most recent closing event by a merged PR
-    const timelineEvents = timelineResponse.data || [];
-    log(`Timeline received ${timelineEvents.length} events. Iterating backwards...`, 'webhook-issue');
+
+    let timelineEvents: any[] = [];
+    let page = 1;
+    let hasNextPage = true;
+
+    while (hasNextPage) {
+      log(`Fetching timeline page ${page}...`, 'webhook-issue');
+      const timelineResponse = await axios.get(timelineUrl, {
+        headers: installationApiHeaders,
+        params: { per_page: 100, page: page }
+      });
+
+      const events = timelineResponse.data || [];
+      timelineEvents = timelineEvents.concat(events);
+
+      // Check for Link header to see if there are more pages
+      const linkHeader = timelineResponse.headers['link'];
+      if (linkHeader && linkHeader.includes('rel="next"')) {
+        page++;
+      } else {
+        hasNextPage = false;
+      }
+
+      // Safety break to prevent infinite loops (e.g. max 10 pages / 1000 events)
+      if (page > 10) {
+        log(`Reached max pagination limit (10 pages) for issue #${issueNumber}. Stopping.`, 'webhook-issue');
+        hasNextPage = false;
+      }
+    }
+
+    log(`Timeline received total ${timelineEvents.length} events. Iterating backwards...`, 'webhook-issue');
     for (let i = timelineEvents.length - 1; i >= 0; i--) {
       const event = timelineEvents[i];
       log(`[Timeline Event ${i}] ID: ${event.id}, Event: ${event.event}, Actor: ${event.actor?.login}, Commit: ${event.commit_id || 'N/A'}, Source Type: ${event.source?.type || 'N/A'}, Source Issue State: ${event.source?.issue?.state || 'N/A'}`, 'webhook-issue'); // Log more source details
